@@ -1228,6 +1228,7 @@ start time."
   (interactive)
   ;; get the current ID
   (let* ((id (otlb-gps-get-id))
+         ;; TODO: allow on secondary devices too
          (tcx-file (concat otlb-gps-location-primary "/" id ".tcx")))
     ;; run script to convert to gpx and open in Google Earth
     (start-process "google earth" nil "nohup" otlb-gps-map-command tcx-file)))

@@ -114,6 +114,7 @@ function fetch-garmin-310 () {
             # convert using appropriate time zone data using Emacs script
             # TODO: would prefer if this used --batch and launch-emacsclient noframe is probably not on everyones system
             #       probably need to make this a configurable variable
+            # TODO: make an external function here
             XMLID=$(launch-emacsclient noframe --eval "(otlb-gps-adjust-id-timezone \"$XMLID\")" | sed -n 2p)
             XMLID=${XMLID//\"/}
             # if file does not exist, rename and copy
@@ -127,22 +128,31 @@ function fetch-garmin-310 () {
     fi
 }
 
-SAMSUNG_INTERMEDIATEDIRECTORY="$OTLBLOGS"/"$SAMSUNG_DEVICENAME"
-SAMSUNG_DIRECTORY="$OTLBLOGS""$SAMSUNG_DEVICENAME"
+# TODO: better naming of SAMSUNG_DEVICE
+SAMSUNG_INTERMEDIATEDIRECTORY="$OTLBLOGS"/"$SAMSUNG_DEVICENAME"-intermediate
+SAMSUNG_DIRECTORY="$OTLBLOGS"/"$SAMSUNG_DEVICENAME"
 
 function convert-samsung-mytracks () {
-    # just convert the IDs for now
+    # just convert the IDs for now, these are loaded directly in as
+    # .tcx files
+    #
+    # XXXX: I use this as a backup device, therefore not all tracks
+    # are copied automatically: export in TCX
+    #
+    # TODO: copy and select from appropriate directory (or maybe over
+    # SSH?), have some way to summarize
     for f in $SAMSUNG_INTERMEDIATEDIRECTORY/*
     do
         if [[ ${f##*.} == "tcx" ]]
         then
-            # this is very specific to a file format
+            # this only supports a very specific file format
             XMLIDFILE=$(basename "${f}")
             XMLIDFILE="${XMLIDFILE// /T}"
             XMLIDFILE="${XMLIDFILE//:/}"
             XMLIDFILE="${XMLIDFILE//_/}"
             XMLIDFILE="${XMLIDFILE//-/}"
             XMLIDFILE="${XMLIDFILE//./00.}"
+            # TODO: possibly flag and convert if different sizes/hashes?
             if [[ ! -e "${SAMSUNG_DIRECTORY}/${XMLIDFILE}" ]]
             then
                 echo "Converting $f to ${SAMSUNG_DIRECTORY}/${XMLIDFILE}!"

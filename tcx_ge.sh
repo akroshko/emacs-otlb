@@ -24,6 +24,6 @@
 
 # convert to tmp
 BASENAME=$(basename "$1")
-TMPFILE=$(mktmp --suffix=.kml)
+TMPFILE=$(mktemp --suffix=.kml)
 gpsbabel -i gtrnctr -f "$1" -o kml -F "${TMPFILE}"
-googleearth "/tmp/${TMPFILE}"
+googleearth "${TMPFILE}"
