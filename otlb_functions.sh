@@ -44,50 +44,43 @@ USAGE="Usage: fetch-garmin-310 [--reset] [--download] [--process]
   --download  Download files from watch to machine.
   --process   Process the files into form ready for import in otlb."
 
-function fetch-garmin-310 () {
+fetch-garmin-310 () {
     # Fetch data from a GARMIN-310, could be easily modified to fetch
     # data from other devices compatible with the 'antfs-cli' package.
 
     # set up the specific directories based on the confiuration
-    INTERMEDIATEDIRECTORY="$OTLBLOGS"/"$DEVICENAME"-intermediate
-    FITDIRECTORY="$ANTCONFIG"/activities
-    TCXDIRECTORY="$OTLBLOGS"/"$DEVICENAME"
+    local INTERMEDIATEDIRECTORY="$OTLBLOGS"/"$DEVICENAME"-intermediate
+    local FITDIRECTORY="$ANTCONFIG"/activities
+    local TCXDIRECTORY="$OTLBLOGS"/"$DEVICENAME"
     # there's probably a better way of dealing with arguments
-    if [[ -z "$1" ]]
-    then
+    if [[ -z "$1" ]]; then
         echo "$USAGE"
         return 0;
     fi
     # XXXX this is good to do if antfs-cli is hanging, can probably be
     # deleted at some point
-    if [[ "$1" == "--reset" ]]
-    then
+    if [[ "$1" == "--reset" ]]; then
         rm "$ANTCONFIG"/authfile
         return 0
     fi
-    if [[ "$1" == "--download" ]]
-    then
+    if [[ "$1" == "--download" ]]; then
         # currently used with my Garmin 310
         antfs-cli
         return 0
     fi
     # loop over downloaded files to see if they are already in intermediate directory
-    if [[ "$1" == "--process" ]]
-    then
+    if [[ "$1" == "--process" ]]; then
         pushd . >> /dev/null
         cd "$OTLBLOGS"
-        for f in $FITDIRECTORY/*
-        do
+        for f in $FITDIRECTORY/*; do
             # TODO: delete corrupted files to avoid nonsense
-            GPSNAME=$(basename -s .fit "$f")
-            if [[ ! -e "${INTERMEDIATEDIRECTORY}/${GPSNAME}.tcx" ]]
-            then
+            local GPSNAME=$(basename -s .fit "$f")
+            if [[ ! -e "${INTERMEDIATEDIRECTORY}/${GPSNAME}.tcx" ]]; then
                 echo "Converting $f to intermediate file ${INTERMEDIATEDIRECTORY}/${GPSNAME}.tcx!"
                 # TODO: how to check and delete corrupted .fit files
                 PYTHONPATH="$OTLBPYTHONPATH" fittotcx "$f" > "${INTERMEDIATEDIRECTORY}/${GPSNAME}".tcx
                 # TODO: better way? fittotcx returns 1 when there is an error
-                if [[ $? != 0 ]]
-                then
+                if [[ $? != 0 ]]; then
                     echo "Corruption in $f, moving to trash!"
                     home-trash "$f"
                 fi
@@ -96,19 +89,17 @@ function fetch-garmin-310 () {
             fi
         done
         # now go over to see if they are in permanent directory
-        for f in $INTERMEDIATEDIRECTORY/*
-        do
+        for f in $INTERMEDIATEDIRECTORY/*; do
             # delete if size is zero to avoid nonsense
             # TODO: better check and delete corrupted intermediate files
-            if [[ $(ls -nl "$f" | awk '{print $5}') == '0' ]]
-            then
+            if [[ $(ls -nl "$f" | awk '{print $5}') == '0' ]]; then
                 # TODO: more universal command for this
                 home-trash "$f"
                 continue
             fi
             # get the GPS ID from each file from each file i.e., parse the
             # TODO: XML handling could probably be a LOT better!
-            XMLID=`xmlstarlet sel -t -v "//*[local-name() = 'Id']" -n "$f"`
+            local XMLID=`xmlstarlet sel -t -v "//*[local-name() = 'Id']" -n "$f"`
             XMLID=${XMLID//-/}
             XMLID=${XMLID//:/}
             # convert using appropriate time zone data using Emacs script
@@ -118,8 +109,7 @@ function fetch-garmin-310 () {
             XMLID=$(launch-emacsclient noframe --eval "(otlb-gps-adjust-id-timezone \"$XMLID\")" | sed -n 2p)
             XMLID=${XMLID//\"/}
             # if file does not exist, rename and copy
-            if [[ ! -e ${TCXDIRECTORY}/${XMLID}.tcx ]]
-            then
+            if [[ ! -e ${TCXDIRECTORY}/${XMLID}.tcx ]]; then
                 echo "Copying $f to ${TCXDIRECTORY}/${XMLID}.tcx!"
                 cp "$f" ${TCXDIRECTORY}/${XMLID}.tcx
             fi
@@ -132,7 +122,7 @@ function fetch-garmin-310 () {
 SAMSUNG_INTERMEDIATEDIRECTORY="$OTLBLOGS"/"$SAMSUNG_DEVICENAME"-intermediate
 SAMSUNG_DIRECTORY="$OTLBLOGS"/"$SAMSUNG_DEVICENAME"
 
-function convert-samsung-mytracks () {
+convert-samsung-mytracks () {
     # just convert the IDs for now, these are loaded directly in as
     # .tcx files
     #
@@ -141,20 +131,17 @@ function convert-samsung-mytracks () {
     #
     # TODO: copy and select from appropriate directory (or maybe over
     # SSH?), have some way to summarize
-    for f in $SAMSUNG_INTERMEDIATEDIRECTORY/*
-    do
-        if [[ ${f##*.} == "tcx" ]]
-        then
+    for f in $SAMSUNG_INTERMEDIATEDIRECTORY/*; do
+        if [[ ${f##*.} == "tcx" ]]; then
             # this only supports a very specific file format
-            XMLIDFILE=$(basename "${f}")
+            local XMLIDFILE=$(basename "${f}")
             XMLIDFILE="${XMLIDFILE// /T}"
             XMLIDFILE="${XMLIDFILE//:/}"
             XMLIDFILE="${XMLIDFILE//_/}"
             XMLIDFILE="${XMLIDFILE//-/}"
             XMLIDFILE="${XMLIDFILE//./00.}"
             # TODO: possibly flag and convert if different sizes/hashes?
-            if [[ ! -e "${SAMSUNG_DIRECTORY}/${XMLIDFILE}" ]]
-            then
+            if [[ ! -e "${SAMSUNG_DIRECTORY}/${XMLIDFILE}" ]]; then
                 echo "Converting $f to ${SAMSUNG_DIRECTORY}/${XMLIDFILE}!"
                 cp "$f" "${SAMSUNG_DIRECTORY}/${XMLIDFILE}"
             fi
@@ -167,7 +154,7 @@ function convert-samsung-mytracks () {
 ## package 'garmin-forerunner-tools'.
 
 OWNERGROUP="<<owner>>:<<group>>"
-function fetch-garmin-305 () {
+fetch-garmin-305 () {
     # Only here for historical purposes, my Garmin 305 broke after 4
     # good years of service. Therefore, this command is disabled!
     # Requires the package from
@@ -180,11 +167,9 @@ function fetch-garmin-305 () {
     cd garmin-305
     sudo garmin_save_runs
     # XXXX oh boy.... assuming garmin names have NO whitespace
-    for f in $(find . -iname "*.gmn")
-    do
-        [ -e "$f" ] || continue
-        if [[ ! -f ${f%.gmn}.tcx ]]
-        then
+    for f in $(find . -iname "*.gmn"); do
+        [[ -e "$f" ]] || continue
+        if [[ ! -f ${f%.gmn}.tcx ]]; then
             gmn2tcx "$f" > ${f%.gmn}.tcx
         fi
     done
