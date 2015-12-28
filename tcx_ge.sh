@@ -22,8 +22,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see http://www.gnu.org/licenses/.
 
-# convert to tmp
-BASENAME=$(basename "$1")
-TMPFILE=$(mktemp --suffix=.kml)
-gpsbabel -i gtrnctr -f "$1" -o kml -F "${TMPFILE}"
-googleearth "${TMPFILE}"
+main () {
+    # convert to tmp
+    BASENAME=$(basename "$1")
+    TMPFILE=$(mktemp --suffix=.kml)
+    gpsbabel -i gtrnctr -f "$1" -o kml -F "${TMPFILE}"
+    googleearth "${TMPFILE}"
+}
+main "$@"

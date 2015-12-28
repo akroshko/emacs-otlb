@@ -76,12 +76,12 @@ fetch-garmin-310 () {
             # TODO: delete corrupted files to avoid nonsense
             local GPSNAME=$(basename -s .fit "$f")
             if [[ ! -e "${INTERMEDIATEDIRECTORY}/${GPSNAME}.tcx" ]]; then
-                echo "Converting $f to intermediate file ${INTERMEDIATEDIRECTORY}/${GPSNAME}.tcx!"
+                msg "Converting $f to intermediate file ${INTERMEDIATEDIRECTORY}/${GPSNAME}.tcx!"
                 # TODO: how to check and delete corrupted .fit files
                 PYTHONPATH="$OTLBPYTHONPATH" fittotcx "$f" > "${INTERMEDIATEDIRECTORY}/${GPSNAME}".tcx
                 # TODO: better way? fittotcx returns 1 when there is an error
                 if [[ $? != 0 ]]; then
-                    echo "Corruption in $f, moving to trash!"
+                    msg "Corruption in $f, moving to trash!"
                     home-trash "$f"
                 fi
                 # XXXX: gpsbabel does not convert laps properly, but this is left here for fun
@@ -110,7 +110,7 @@ fetch-garmin-310 () {
             XMLID=${XMLID//\"/}
             # if file does not exist, rename and copy
             if [[ ! -e ${TCXDIRECTORY}/${XMLID}.tcx ]]; then
-                echo "Copying $f to ${TCXDIRECTORY}/${XMLID}.tcx!"
+                msg "Copying $f to ${TCXDIRECTORY}/${XMLID}.tcx!"
                 cp "$f" ${TCXDIRECTORY}/${XMLID}.tcx
             fi
         done
@@ -142,7 +142,7 @@ convert-samsung-mytracks () {
             XMLIDFILE="${XMLIDFILE//./00.}"
             # TODO: possibly flag and convert if different sizes/hashes?
             if [[ ! -e "${SAMSUNG_DIRECTORY}/${XMLIDFILE}" ]]; then
-                echo "Converting $f to ${SAMSUNG_DIRECTORY}/${XMLIDFILE}!"
+                msg "Converting $f to ${SAMSUNG_DIRECTORY}/${XMLIDFILE}!"
                 cp "$f" "${SAMSUNG_DIRECTORY}/${XMLIDFILE}"
             fi
         fi
