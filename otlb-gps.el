@@ -394,7 +394,10 @@ and XML in general"
            (zulu-time-encode (cadr (assoc 'zulu-time-encode read-alist)))
            (id-time-encode (cadr (assoc 'id-time-encode read-alist)))
            (time-zone (cadr (assoc 'time-zone read-alist)))
-           (the-shoes (otlb-gps-select-shoes))
+           (the-shoes (let ((shoes (otlb-gps-select-shoes)))
+                      (if (eq shoes 'cancel)
+                          ""
+                        shoes)))
            (table ""))
       (when (eq the-shoes 'cancel)
         (setq the-shoes ""))
@@ -498,7 +501,10 @@ well as filling in known information."
          (end-longitude "")
          (the-distance (read-string "Distance covered (km): "))
          (the-pace (read-string "Estimated pace (min/km): "))
-         (the-shoes (otlb-gps-select-shoes))
+         (the-shoes (let ((shoes (otlb-gps-select-shoes)))
+                      (if (eq shoes 'cancel)
+                          ""
+                        shoes)))
          ;; duration in seconds
          (the-duration (* 60 (string-to-float the-distance) (string-to-float the-pace)))
          (the-end-time "")
@@ -784,11 +790,12 @@ TODO: create buffer for looking at raw data?
   (interactive)
   (let* ((selected (otlb-gps-select-shoes))
          table-length)
-    (if (org-at-table-p)
-        (progn
-          (setq table-length (length (cic:org-table-to-lisp-no-separators)))
-          (org-table-put table-length 6 selected))
-      (insert selected-string))))
+    (unless (eq selected 'cancel)
+      (if (org-at-table-p)
+          (progn
+            (setq table-length (length (cic:org-table-to-lisp-no-separators)))
+            (org-table-put table-length 6 selected))
+        (insert selected-string)))))
 
 (defun otlb-gps-select-shoes ()
   "Interactively select the shoes worn based on current
