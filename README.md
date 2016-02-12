@@ -44,14 +44,11 @@ sample configuration file.
 The `git` version control system is also an optional requirement,
 which helps with installation of the Python tools for working with GPS
 devices and data.  The *Python* packages required can be installed
-directory from https://github.com using the commands:
+directory from https://github.com using the commands in order:
 
-    pip install git+https://github.com/Tigge/antfs-cli.git
-    pip install git+https://github.com/Tigge/FIT-to-TCX.git
-    pip install git+https://github.com/Tigge/openant.git
-    pip install git+https://github.com/dtcooper/python-fitparse.git
-
-WARNING: I haven't verified these commands on a fresh install.
+    pip install git+git://github.com/Tigge/openant.git
+    pip install git+git://github.com/Tigge/antfs-cli.git
+    pip install git+git://github.com/Tigge/FIT-to-TCX.git
 
 It has been found anything but the latest versions of the above
 *Python* packages do not work well.
