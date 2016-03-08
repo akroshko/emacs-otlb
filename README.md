@@ -233,7 +233,7 @@ Planned Development
 - better way of selecting interesting data, rather than elisp
   expressions
 
-- export/integrate with other software, e.g., SQL, R, SciPy, etc.
+- export/integrate with other software, e.g., SQL, R, SciPy, GnuPlot, etc.
 
 - better handling to get appropriate summary of retired footwear
 

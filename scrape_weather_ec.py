@@ -28,11 +28,11 @@ import sys
 import urllib
 # uncomment for debugging
 # from pprint import pprint
-# from lxml.etree import tostring
+from lxml.etree import tostring
 
 if len(sys.argv) < 3:
     print "sys.argv[1] is the year, month, day (as YYYYMMDD) and/or --current"
-    print "sys.argv[2] is the time (as a string HH:MM)"
+    print "sys.argv[2] is the time (as a string HHMM)"
 
 # round time up and down
 # replace hours with zeros
@@ -49,15 +49,17 @@ def get_from_url_current(url):
     # text = html.xpath('//tr/td//text()')
     table = html.xpath('//table')[0]
     hours=[h.strip() for h in table.xpath('//td[@headers=\'header1\']/text()')]
-    raw_temps=table.xpath('//td[@headers=\'header3\']')
+    # TODO: problem seems to be getting temps
+    raw_temps=table.xpath('//td[@headers=\'header3m\']')
     temps = []
     for t in raw_temps:
-        txs = t.xpath('text()')[0].strip()
+        txs = str(t.xpath('text()')[0].split('\n')[0].strip())
         if txs == '':
-            temps.append(str(t.xpath('span/text()')[0].strip()))
+            temps.append(str(t.xpath('span/text()')[0].strip().split()[0].strip()))
         else:
-            temps.append(str(txs))
-    wind=[w.strip() for w in table.xpath('//td[@headers=\'header6\']/text()')]
+            temps.append(txs)
+    wind = [W[0]+' '+W[1] for W in zip([w.strip() for w in table.xpath('//td[@headers=\'header4m\']/abbr/text()') if w.strip() != ''],
+                                       [w.strip() for w in table.xpath('//td[@headers=\'header4m\']/text()') if w.strip() != ''])]
     index=None
     for i,h in enumerate(hours):
         if int(h.split(':')[0].strip()) == int(hoursdown):

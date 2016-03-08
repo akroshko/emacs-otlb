@@ -1166,6 +1166,7 @@ start time."
         weather-string)
     ;; compare to current id, is target longer than 24 hours ago?
     ;; call the python program to get the appropriate condition string
+    (mpp target-id)
     (if (>= (float-time (time-subtract
                          (otlb-gps-id-to-encode-time now-id)
                          (otlb-gps-id-to-encode-time target-id)))
