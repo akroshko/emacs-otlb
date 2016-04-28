@@ -105,28 +105,54 @@ in appropriate place."
 
 ;; only global key required!
 (global-set-key (kbd "s-j l") 'otlb-gps-find-pedestrian-location)
+
+(defvar otlb-gps-mode-map
+  nil
+  "Keymap for otlb-gps.")
+
+
+(defun otlb-gps-mode-map ()
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "s-l *") 'otlb-gps-recalculate-all)
+    (define-key map (kbd "s-l c") 'otlb-gps-insert-conditions)
+    (define-key map (kbd "s-l f") 'otlb-gps-fetch)
+    (define-key map (kbd "s-l g") 'otlb-gps-open-google-earth)
+    (define-key map (kbd "s-l i") 'otlb-gps-insert)
+    (define-key map (kbd "s-l l") 'otlb-gps-cycle)
+    (define-key map (kbd "s-l s-l") 'otlb-gps-cycle)
+    ;; TODO: do I really want this capitalization?
+    (define-key map (kbd "s-L L") 'otlb-gps-cycle-shift)
+    (define-key map (kbd "s-L s-L") 'otlb-gps-cycle-shift)
+    (define-key map (kbd "s-l m") 'otlb-gps-insert-miscellaneous)
+    (define-key map (kbd "s-l p") 'otlb-gps-plot)
+    (define-key map (kbd "s-l q") 'otlb-gps-toggle-quality)
+    (define-key map (kbd "s-l s") 'otlb-gps-sort)
+    (define-key map (kbd "s-l t") 'otlb-gps-toggle)
+    (define-key map (kbd "s-l u") 'otlb-gps-insert-unrecorded)
+    (define-key map (kbd "s-l w") 'otlb-gps-footwear)
+    ;; menus
+    (define-key map [menu-bar otlb-gps] (cons "otlb-gps" (make-sparse-keymap "otlb-gps")))
+    (define-key map [menu-bar otlb-gps google-earth]         '("Open with Google Earth" . otlb-gps-open-google-earth))
+    (define-key map [menu-bar otlb-gps plot]                 '("Plot" . otlb-gps-plot))
+    (define-key map [menu-bar otlb-gps separator2]           '("--"))
+    (define-key map [menu-bar otlb-gps toggle-quality]       '("Toggle quality" . otlb-gps-toggle-quality))
+    (define-key map [menu-bar otlb-gps toggle-type]          '("Toggle type" . otlb-gps-toggle))
+    (define-key map [menu-bar otlb-gps insert-footwear]      '("Insert footwear" . otlb-gps-footwear))
+    (define-key map [menu-bar otlb-gps insert-conditions]    '("Insert conditions" . otlb-gps-insert-conditions))
+    (define-key map [menu-bar otlb-gps insert-unrecorded]    '("Insert unrecorded" . otlb-gps-insert-unrecorded))
+    (define-key map [menu-bar otlb-gps insert-miscellaneous] '("Insert miscellaneous" . otlb-gps-insert-miscellaneous))
+    (define-key map [menu-bar otlb-gps insert]               '("Insert activity" . otlb-gps-insert))
+    (define-key map [menu-bar otlb-gps separator1]           '("--"))
+    (define-key map [menu-bar otlb-gps cycle-shift]          '("Cycle shift" . otlb-gps-cycle-shift))
+    (define-key map [menu-bar otlb-gps cycle]                '("Cycle" . otlb-gps-cycle))
+    (define-key map [menu-bar otlb-gps recalulate]           '("Recalculate all" . otlb-gps-recalculate-all))
+    map))
+(setq otlb-gps-mode-map (otlb-gps-mode-map))
+
 (define-minor-mode otlb-gps-mode
   :global nil
   :lighter " otlb"
-  :keymap (let ((map (make-sparse-keymap)))
-            (define-key map (kbd "s-l *") 'otlb-gps-recalculate-all)
-            (define-key map (kbd "s-l c") 'otlb-gps-insert-conditions)
-            (define-key map (kbd "s-l f") 'otlb-gps-fetch)
-            (define-key map (kbd "s-l g") 'otlb-gps-open-google-earth)
-            (define-key map (kbd "s-l i") 'otlb-gps-insert)
-            (define-key map (kbd "s-l l") 'otlb-gps-cycle)
-            (define-key map (kbd "s-l s-l") 'otlb-gps-cycle)
-            ;; TODO: do I really want this capitalization?
-            (define-key map (kbd "s-L L") 'otlb-gps-cycle-shift)
-            (define-key map (kbd "s-L s-L") 'otlb-gps-cycle-shift)
-            (define-key map (kbd "s-l m") 'otlb-gps-insert-miscellaneous)
-            (define-key map (kbd "s-l p") 'otlb-gps-plot)
-            (define-key map (kbd "s-l q") 'otlb-gps-toggle-quality)
-            (define-key map (kbd "s-l s") 'otlb-gps-sort)
-            (define-key map (kbd "s-l t") 'otlb-gps-toggle)
-            (define-key map (kbd "s-l u") 'otlb-gps-insert-unrecorded)
-            (define-key map (kbd "s-l w") 'otlb-gps-footwear)
-            map))
+  :keymap otlb-gps-mode-map)
 
 (defun otlb-buffer-p ()
   (and (eq major-mode 'org-mode)
