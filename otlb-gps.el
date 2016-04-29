@@ -113,24 +113,25 @@ in appropriate place."
 
 (defun otlb-gps-mode-map ()
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "s-l *") 'otlb-gps-recalculate-all)
-    (define-key map (kbd "s-l c") 'otlb-gps-insert-conditions)
-    (define-key map (kbd "s-l f") 'otlb-gps-fetch)
-    (define-key map (kbd "s-l g") 'otlb-gps-open-google-earth)
-    (define-key map (kbd "s-l i") 'otlb-gps-insert)
-    (define-key map (kbd "s-l l") 'otlb-gps-cycle)
+    (define-key map (kbd "s-l *")   'otlb-gps-recalculate-all)
+    (define-key map (kbd "s-l c")   'otlb-gps-insert-conditions)
+    (define-key map (kbd "s-l f")   'otlb-gps-fetch)
+    (define-key map (kbd "s-l g")   'otlb-gps-open-google-earth)
+    (define-key map (kbd "s-l i")   'otlb-gps-insert)
+    (define-key map (kbd "s-l l")   'otlb-gps-cycle)
     (define-key map (kbd "s-l s-l") 'otlb-gps-cycle)
     ;; TODO: do I really want this capitalization?
-    (define-key map (kbd "s-L L") 'otlb-gps-cycle-shift)
+    (define-key map (kbd "s-L L")   'otlb-gps-cycle-shift)
     (define-key map (kbd "s-L s-L") 'otlb-gps-cycle-shift)
-    (define-key map (kbd "s-l m") 'otlb-gps-insert-miscellaneous)
+    (define-key map (kbd "s-l m")   'otlb-gps-insert-miscellaneous)
     (define-key map (kbd "s-l M-m") 'otlb-gps-insert-miscellaneous-ask)
-    (define-key map (kbd "s-l p") 'otlb-gps-plot)
-    (define-key map (kbd "s-l q") 'otlb-gps-toggle-quality)
-    (define-key map (kbd "s-l s") 'otlb-gps-sort)
-    (define-key map (kbd "s-l t") 'otlb-gps-toggle)
-    (define-key map (kbd "s-l u") 'otlb-gps-insert-unrecorded)
-    (define-key map (kbd "s-l w") 'otlb-gps-footwear)
+    (define-key map (kbd "s-l n")   'otlb-gps-insert-note)
+    (define-key map (kbd "s-l p")   'otlb-gps-plot)
+    (define-key map (kbd "s-l q")   'otlb-gps-toggle-quality)
+    (define-key map (kbd "s-l s")   'otlb-gps-sort)
+    (define-key map (kbd "s-l t")   'otlb-gps-toggle)
+    (define-key map (kbd "s-l u")   'otlb-gps-insert-unrecorded)
+    (define-key map (kbd "s-l w")   'otlb-gps-footwear)
     ;; menus
     (define-key map [menu-bar otlb-gps] (cons "otlb-gps" (make-sparse-keymap "otlb-gps")))
     (define-key map [menu-bar otlb-gps google-earth]             '("Open with Google Earth" . otlb-gps-open-google-earth))
@@ -140,9 +141,10 @@ in appropriate place."
     (define-key map [menu-bar otlb-gps toggle-type]              '("Toggle type" . otlb-gps-toggle))
     (define-key map [menu-bar otlb-gps insert-footwear]          '("Insert footwear" . otlb-gps-footwear))
     (define-key map [menu-bar otlb-gps insert-conditions]        '("Insert conditions" . otlb-gps-insert-conditions))
-    (define-key map [menu-bar otlb-gps insert-unrecorded]        '("Insert unrecorded" . otlb-gps-insert-unrecorded))
+    (define-key map [menu-bar otlb-gps insert-note]              '("Insert note" . otlb-gps-insert-note))
     (define-key map [menu-bar otlb-gps insert-miscellaneous-ask] '("Insert miscellaneous type" . otlb-gps-insert-miscellaneous-ask))
     (define-key map [menu-bar otlb-gps insert-miscellaneous]     '("Insert miscellaneous" . otlb-gps-insert-miscellaneous))
+    (define-key map [menu-bar otlb-gps insert-unrecorded]        '("Insert unrecorded" . otlb-gps-insert-unrecorded))
     (define-key map [menu-bar otlb-gps insert]                   '("Insert activity" . otlb-gps-insert))
     (define-key map [menu-bar otlb-gps separator1]               '("--"))
     (define-key map [menu-bar otlb-gps cycle-shift]              '("Cycle shift" . otlb-gps-cycle-shift))
@@ -611,16 +613,20 @@ well as filling in known information."
 (defun otlb-gps-sort ()
   "Sort the GPS logbook enteries."
   (interactive)
-  ;; use bubble sort!
-  (setq otlb-gps-sort-done-this-step t)
-  (while otlb-gps-sort-done-this-step
-    (setq otlb-gps-sort-done-this-step nil)
-    ;; goto first heading
-    (goto-char (point-min))
-    (outline-next-heading)
+  (let ((bubble-count 0))
+    ;; use bubble sort!
+    (setq otlb-gps-sort-done-this-step t)
     (save-excursion
-      ;; change to quiet or make my own message?
-      (org-table-map-tables 'otlb-gps-bubble nil))))
+      (while otlb-gps-sort-done-this-step
+        (message (concat "Bubble: " (number-to-string bubble-count)))
+        (setq otlb-gps-sort-done-this-step nil)
+        ;; goto first heading
+        (goto-char (point-min))
+        (outline-next-heading)
+        (save-excursion
+          ;; TODO: change to quiet or make my own message?
+          (org-map-entries 'otlb-gps-bubble nil))
+        (setq bubble-count (+ 1 bubble-count))))))
 
 (defun otlb-gps-bubble ()
   "Helper function to bubble sort the GPS logbook enteries."
@@ -889,6 +895,28 @@ TAG-STRING tags after :miscellaneous: tag."
     (move-beginning-of-line 1)
     (forward-char 4)
     (org-table-align)))
+
+(defun otlb-gps-insert-note (&optional id)
+  "Insert a note entry with ID or select if nil."
+  (interactive)
+  (goto-char (point-min))
+  (let* ((the-start-time (org-read-date nil 'totime nil "Start time: "))
+         (the-start-id (otlb-gps-encoded-time-to-id the-start-time)))
+    (move-end-of-line 1)
+    (insert "\n")
+    (org-insert-heading)
+    (insert (concat (otlb-gps-id-to-full-date the-start-id) " :note: "))
+    (move-end-of-line 1)
+    (insert "\n")
+    (insert (concat  "  :PROPERTIES:\n"
+                     "  :id: " the-start-id "\n"
+                     "  :time-zone: " "-6.0" "\n"
+                     "  :END:\n"))
+    (search-backward ":PROPERTIES:")
+    (org-cycle)
+    (next-line)
+    (move-beginning-of-line 1)
+    (insert "  ")))
 
 (defun otlb-gps-hr-number-to-string (number)
   "Convert a HR number to an appropriate string."
@@ -1235,7 +1263,6 @@ start time."
         weather-string)
     ;; compare to current id, is target longer than 24 hours ago?
     ;; call the python program to get the appropriate condition string
-    (mpp target-id)
     (if (>= (float-time (time-subtract
                          (otlb-gps-id-to-encode-time now-id)
                          (otlb-gps-id-to-encode-time target-id)))
