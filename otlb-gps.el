@@ -124,6 +124,7 @@ in appropriate place."
     (define-key map (kbd "s-L L") 'otlb-gps-cycle-shift)
     (define-key map (kbd "s-L s-L") 'otlb-gps-cycle-shift)
     (define-key map (kbd "s-l m") 'otlb-gps-insert-miscellaneous)
+    (define-key map (kbd "s-l M-m") 'otlb-gps-insert-miscellaneous-ask)
     (define-key map (kbd "s-l p") 'otlb-gps-plot)
     (define-key map (kbd "s-l q") 'otlb-gps-toggle-quality)
     (define-key map (kbd "s-l s") 'otlb-gps-sort)
@@ -132,20 +133,21 @@ in appropriate place."
     (define-key map (kbd "s-l w") 'otlb-gps-footwear)
     ;; menus
     (define-key map [menu-bar otlb-gps] (cons "otlb-gps" (make-sparse-keymap "otlb-gps")))
-    (define-key map [menu-bar otlb-gps google-earth]         '("Open with Google Earth" . otlb-gps-open-google-earth))
-    (define-key map [menu-bar otlb-gps plot]                 '("Plot" . otlb-gps-plot))
-    (define-key map [menu-bar otlb-gps separator2]           '("--"))
-    (define-key map [menu-bar otlb-gps toggle-quality]       '("Toggle quality" . otlb-gps-toggle-quality))
-    (define-key map [menu-bar otlb-gps toggle-type]          '("Toggle type" . otlb-gps-toggle))
-    (define-key map [menu-bar otlb-gps insert-footwear]      '("Insert footwear" . otlb-gps-footwear))
-    (define-key map [menu-bar otlb-gps insert-conditions]    '("Insert conditions" . otlb-gps-insert-conditions))
-    (define-key map [menu-bar otlb-gps insert-unrecorded]    '("Insert unrecorded" . otlb-gps-insert-unrecorded))
-    (define-key map [menu-bar otlb-gps insert-miscellaneous] '("Insert miscellaneous" . otlb-gps-insert-miscellaneous))
-    (define-key map [menu-bar otlb-gps insert]               '("Insert activity" . otlb-gps-insert))
-    (define-key map [menu-bar otlb-gps separator1]           '("--"))
-    (define-key map [menu-bar otlb-gps cycle-shift]          '("Cycle shift" . otlb-gps-cycle-shift))
-    (define-key map [menu-bar otlb-gps cycle]                '("Cycle" . otlb-gps-cycle))
-    (define-key map [menu-bar otlb-gps recalulate]           '("Recalculate all" . otlb-gps-recalculate-all))
+    (define-key map [menu-bar otlb-gps google-earth]             '("Open with Google Earth" . otlb-gps-open-google-earth))
+    (define-key map [menu-bar otlb-gps plot]                     '("Plot" . otlb-gps-plot))
+    (define-key map [menu-bar otlb-gps separator2]               '("--"))
+    (define-key map [menu-bar otlb-gps toggle-quality]           '("Toggle quality" . otlb-gps-toggle-quality))
+    (define-key map [menu-bar otlb-gps toggle-type]              '("Toggle type" . otlb-gps-toggle))
+    (define-key map [menu-bar otlb-gps insert-footwear]          '("Insert footwear" . otlb-gps-footwear))
+    (define-key map [menu-bar otlb-gps insert-conditions]        '("Insert conditions" . otlb-gps-insert-conditions))
+    (define-key map [menu-bar otlb-gps insert-unrecorded]        '("Insert unrecorded" . otlb-gps-insert-unrecorded))
+    (define-key map [menu-bar otlb-gps insert-miscellaneous-ask] '("Insert miscellaneous type" . otlb-gps-insert-miscellaneous-ask))
+    (define-key map [menu-bar otlb-gps insert-miscellaneous]     '("Insert miscellaneous" . otlb-gps-insert-miscellaneous))
+    (define-key map [menu-bar otlb-gps insert]                   '("Insert activity" . otlb-gps-insert))
+    (define-key map [menu-bar otlb-gps separator1]               '("--"))
+    (define-key map [menu-bar otlb-gps cycle-shift]              '("Cycle shift" . otlb-gps-cycle-shift))
+    (define-key map [menu-bar otlb-gps cycle]                    '("Cycle" . otlb-gps-cycle))
+    (define-key map [menu-bar otlb-gps recalulate]               '("Recalculate all" . otlb-gps-recalculate-all))
     map))
 (setq otlb-gps-mode-map (otlb-gps-mode-map))
 
@@ -841,11 +843,52 @@ footwear."
       (cic:select-list-item (mapcar (lambda (e) (mapconcat 'identity e " "))
                                     pairs)))))
 
-(defun otlb-gps-insert-miscellaneous (&optional id)
-  "Insert a miscellaneous entry with ID or select if nil.."
+
+(defun otlb-gps-insert-miscellaneous-ask ()
   (interactive)
-  ;; TODO fill in here
-  (error "Not implemented!"))
+  (let ((selected (cic:select-list-item (list "strength" "stretch" "strength/stretch"))))
+    (cond ((equal selected "strength")
+           (otlb-gps-insert-miscellaneous nil "strength:"))
+          ((equal selected "stretch")
+           (otlb-gps-insert-miscellaneous nil "stretch:"))
+          ((equal selected "strength/stretch")
+           (otlb-gps-insert-miscellaneous nil "strength:stretch:")))))
+
+(defun otlb-gps-insert-miscellaneous (&optional id tag-string)
+  "Insert a miscellaneous entry with ID or select if nil.  Add
+TAG-STRING tags after :miscellaneous: tag."
+  (interactive)
+  (goto-char (point-min))
+  (let* ((the-start-time (org-read-date nil 'totime nil "Start time: "))
+         (the-start-id (otlb-gps-encoded-time-to-id the-start-time))
+         (table (concat
+                 "  |---+---+---+---+---|\n"
+                 "  | Activity  | Number | Intensity | Rest      | Notes        |\n"
+                 "  |---+---+---+---+---+\n"
+                 "  |   |   |   |   |   |\n"
+                 "  |---+---+---+---+---+\n"
+                 "  #+BEGIN_COMMENT\n"
+                 "  #+END_COMMENT")))
+    (move-end-of-line 1)
+    (insert "\n")
+    (org-insert-heading)
+    (if tag-string
+        (insert (concat (otlb-gps-id-to-full-date the-start-id) " :miscellaneous:" tag-string " "))
+      (insert (concat (otlb-gps-id-to-full-date the-start-id) " :miscellaneous: ")))
+    (move-end-of-line 1)
+    (insert "\n")
+    (insert (concat  "  :PROPERTIES:\n"
+                     "  :id: " the-start-id "\n"
+                     "  :time-zone: " "-6.0" "\n"
+                     "  :END:\n"))
+    (search-backward ":PROPERTIES:")
+    (org-cycle)
+    (next-line)
+    (insert table)
+    (forward-line -3)
+    (move-beginning-of-line 1)
+    (forward-char 4)
+    (org-table-align)))
 
 (defun otlb-gps-hr-number-to-string (number)
   "Convert a HR number to an appropriate string."
