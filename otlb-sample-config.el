@@ -44,9 +44,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; use GPS data in emacs org-tables
 
-(defconst otlb-gps-root
+(defconst otlb-gps-root-package
   (file-name-directory load-file-name)
-  "The root directory where the data and logbooks are handled.")
+  "The root directory where the otlb-package is.")
+
+(defconst otlb-gps-root-binary
+  (file-name-directory load-file-name)
+  "The root directory where the binary data is handled.")
+
+(defconst otlb-gps-root-text
+  (file-name-directory load-file-name)
+  "The root directory where the text logbooks are handled.")
 
 (defconst otlb-gps-device-primary
   "<<model number>> <<serial number>>"
@@ -63,15 +71,15 @@
   <<application name>>\"")
 
 (defconst otlb-gps-footwear-current
-  (concat otlb-gps-root "/footwear-current.org")
+  (concat otlb-gps-root-text "/footwear-current.org")
   "The location of current footwear.")
 
 (defconst otlb-gps-location-primary
-  (concat otlb-gps-root "/" (replace-regexp-in-string " " "-" otlb-gps-device-primary))
+  (concat otlb-gps-root-binary "/" (replace-regexp-in-string " " "-" otlb-gps-device-primary))
   "The location where data from the primary device is stored.")
 
 (defconst otlb-gps-location-secondary
-  (concat otlb-gps-root "/" (replace-regexp-in-string " " "-" otlb-gps-device-secondary))
+  (concat otlb-gps-root-binary "/" (replace-regexp-in-string " " "-" otlb-gps-device-secondary))
   "The location where data from the secondary device is stored.")
 
 (defvar otlb-gps-time-zone
@@ -79,13 +87,13 @@
   "A number giving the change from Zulu time.")
 
 (defconst otlb-gps-conditions-script-command
-  (concat "python " otlb-gps-root "/" "scrape_weather_ec.py")
+  (concat "python " otlb-gps-root-package "/" "scrape_weather_ec.py")
   "The script to scrape weather, the default takes information
   from Environment Canada for Saskatoon, Saskatchewan.  Will need
   to be modified for other locations.")
 
 (defconst otlb-gps-map-command
-  (concat otlb-gps-root "/tcx_ge.sh")
+  (concat otlb-gps-root-package "/tcx_ge.sh")
   "The command to convert a tcx file named by ID and display in a
   map.  Defaults to a KML file in Google Earth.")
 

@@ -244,7 +244,9 @@ off of a tool for downloading off of a Garmin 305."
   ; TODO need a map-file-tables thing for this
   (with-current-file-min otlb-gps-pedestrian-location
     ;; walk all tables in the file
-    (org-table-map-tables 'otlb-gps-table-id))
+    ;; (org-table-map-tables 'otlb-gps-table-id)
+    (org-map-entries 'otlb-gps-table-id)
+    )
   (setq otlb-gps-log-ids (sort otlb-gps-log-ids (lambda (i j) (not (string< i j))))))
 
 (defun otlb-gps-missing-ids ()
