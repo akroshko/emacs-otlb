@@ -6,12 +6,12 @@
 #
 # Old code is also included for the Garmin 305.
 #
-# Copyright (C) 2015-2016 Andrew Kroshko, all rights reserved.
+# Copyright (C) 2015-2016, Andrew Kroshko, all rights reserved.
 #
 # Author: Andrew Kroshko
 # Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 # Created: Fri Mar 27, 2015
-# Version: 20151201
+# Version: 20160511
 # URL: https://github.com/akroshko/emacs-otlb
 #
 # This program is free software: you can redistribute it and/or modify
@@ -32,9 +32,7 @@
 # the packages 'xmlstarlet' and 'python-lxml' being required.
 # Additional packages not included in the Debian package manager
 # include the packages 'fitparse' and 'antfs-cli' installable using
-# the 'pip' Python package management tool and the package
-# 'FIT-TO-TCX' from https://github.com/Tigge/FIT-to-TCX that must be
-# installed manually.
+# the 'pip' Python package management tool.
 #
 # See the included README.md file for more information.
 
@@ -44,10 +42,21 @@ USAGE="Usage: fetch-garmin-310 [--reset] [--download] [--process]
   --download  Download files from watch to machine.
   --process   Process the files into form ready for import in otlb."
 
+get-otlb-source () {
+    # https://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in
+    SOURCE="${BASH_SOURCE[0]}"
+    while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+        DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+        SOURCE="$(readlink "$SOURCE")"
+        [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+    done
+    DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+    echo $DIR
+}
+
 fetch-garmin-310 () {
     # Fetch data from a GARMIN-310, could be easily modified to fetch
     # data from other devices compatible with the 'antfs-cli' package.
-
     # set up the specific directories based on the confiuration
     local INTERMEDIATEDIRECTORY="$OTLBLOGS"/"$DEVICENAME"-intermediate
     local FITDIRECTORY="$ANTCONFIG"/activities
@@ -70,54 +79,100 @@ fetch-garmin-310 () {
     fi
     # loop over downloaded files to see if they are already in intermediate directory
     if [[ "$1" == "--process" ]]; then
+        OTLBSOURCE="$(get-otlb-source)"
         pushd . >> /dev/null
         cd "$OTLBLOGS"
         for f in $FITDIRECTORY/*; do
             # TODO: delete corrupted files to avoid nonsense
             local GPSNAME=$(basename -s .fit "$f")
-            if [[ ! -e "${INTERMEDIATEDIRECTORY}/${GPSNAME}.tcx" ]]; then
-                msg "Converting $f to intermediate file ${INTERMEDIATEDIRECTORY}/${GPSNAME}.tcx!"
-                # TODO: how to check and delete corrupted .fit files
-                PYTHONPATH="$OTLBPYTHONPATH" fittotcx "$f" > "${INTERMEDIATEDIRECTORY}/${GPSNAME}".tcx
-                # TODO: better way? fittotcx returns 1 when there is an error
-                if [[ $? != 0 ]]; then
-                    msg "Corruption in $f, moving to trash!"
-                    home-trash "$f"
-                fi
-                # XXXX: gpsbabel does not convert laps properly, but this is left here for fun
-                # gpsbabel -i garmin_fit -f "$f" -o gtrnctr,course=0,sport=Running -F "${INTERMEDIATEDIRECTORY}/${GPSNAME}".tcx
-            fi
-        done
-        # now go over to see if they are in permanent directory
-        for f in $INTERMEDIATEDIRECTORY/*; do
-            # delete if size is zero to avoid nonsense
-            # TODO: better check and delete corrupted intermediate files
-            if [[ $(ls -nl "$f" | awk '{print $5}') == '0' ]]; then
-                # TODO: more universal command for this
-                home-trash "$f"
-                continue
-            fi
-            # get the GPS ID from each file from each file i.e., parse the
-            # TODO: XML handling could probably be a LOT better!
-            local XMLID=`xmlstarlet sel -t -v "//*[local-name() = 'Id']" -n "$f"`
-            XMLID=${XMLID//-/}
-            XMLID=${XMLID//:/}
-            # convert using appropriate time zone data using Emacs script
-            # TODO: would prefer if this used --batch and launch-emacsclient noframe is probably not on everyones system
-            #       probably need to make this a configurable variable
-            # TODO: make an external function here
-            XMLID=$(launch-emacsclient noframe --eval "(otlb-gps-adjust-id-timezone \"$XMLID\")" | sed -n 2p)
-            XMLID=${XMLID//\"/}
-            # if file does not exist, rename and copy
-            if [[ ! -e ${TCXDIRECTORY}/${XMLID}.tcx ]]; then
-                msg "Copying $f to ${TCXDIRECTORY}/${XMLID}.tcx!"
-                cp "$f" ${TCXDIRECTORY}/${XMLID}.tcx
+            # TODO: python should give list of fit-ids instead
+            XMLID=$(python "$OTLBSOURCE"/read_files.py "$f" --fit-id)
+            if [[ ! -e "${TCXDIRECTORY}/${XMLID}.tcx" ]] && [[ ! -e "${TCXDIRECTORY}/${XMLID}.fit" ]]; then
+                echo "Missing $XMLID! Copying!"
+                cp "$f" "${TCXDIRECTORY}/${XMLID}.fit"
             fi
         done
         popd >> /dev/null
     fi
 }
 
+convert-aux-devices () {
+    # convert files deposited in the aux incoming directory
+    # TODO: document and add help here
+    for f in $OTLBAUX_INCOMING/*; do
+        if [[ ${f##*.} == "tcx" ]]; then
+            if [[ ! -e "$OTLBAUX"/$(basename $f) ]]; then
+                # TODO: in case of failure
+                local THEID="$(get-id-tcx $f)" || continue
+                cp "$f" "$OTLBAUX"/"$THEID".tcx
+            fi
+        elif [[ ${f##*.} == "gpx" ]]; then
+            if [[ ! -e "$OTLBAUX"/$(basename $f) ]]; then
+                # TODO: in case of failure
+                local THEID="$(get-id-gpx $f)" || continue
+                cp "$f" "$OTLBAUX"/"$THEID".gpx
+            fi
+        fi
+    done
+}
+
+# TODO: deal with corrupt files
+get-id-tcx () {
+    # get the id for a tcx file
+    # TODO: should I get rid of the xmlstarlet and just use Python for everything
+    OTLBSOURCE="$(get-otlb-source)"
+    # get a timestamp from first track
+    local XMLID=`xmlstarlet sel -t -v "//*[local-name() = 'Id']" -n "$1"`
+    if [[ -z "$XMLID" ]]; then
+        return 1
+    fi
+    XMLID=${XMLID//-/}
+    XMLID=${XMLID//:/}
+    echo $(python "$OTLBSOURCE"/read_files.py "$XMLID" --utc)
+    # rename for import
+    # TODO: convert time zone properly, just add 6 hours for now
+}
+
+get-id-gpx () {
+    # get the id for a gpx file
+    # TODO: should I get rid of the xmlstarlet and just use Python for everything
+    OTLBSOURCE="$(get-otlb-source)"
+    # get a timestamp from first track
+    local XMLID=`xmlstarlet sel -t -v "//*[local-name() = 'metadata']/*[local-name() = 'time']" -n "$1"`
+    XMLID=${XMLID//-/}
+    XMLID=${XMLID//:/}
+    echo $(python "$OTLBSOURCE"/read_files.py "$XMLID" --utc)
+    # rename for import
+}
+
+################################################################################
+## Old code that may prove useful Not documented and requires the
+## package 'garmin-forerunner-tools'.
+
+OWNERGROUP="<<owner>>:<<group>>"
+fetch-garmin-305 () {
+    # Only here for historical purposes, my Garmin 305 broke after 4
+    # good years of service. Therefore, this command is disabled!
+    # Requires the package from
+    # https://code.google.com/p/garmintools/.
+    return 1
+    pushd . >> /dev/null
+    cd "$OTLBLOGS"
+    # this is me, because the command required root
+    sudo chown -R "$OWNERGROUP" garmin-305
+    cd garmin-305
+    sudo garmin_save_runs
+    # XXXX oh boy.... assuming garmin names have NO whitespace
+    for f in $(find . -iname "*.gmn"); do
+        [[ -e "$f" ]] || continue
+        if [[ ! -f ${f%.gmn}.tcx ]]; then
+            gmn2tcx "$f" > ${f%.gmn}.tcx
+        fi
+    done
+    popd >> /dev/null
+}
+
+# old code, mytracks is gone, here as a useful reference only.
 # TODO: better naming of SAMSUNG_DEVICE
 SAMSUNG_INTERMEDIATEDIRECTORY="$OTLBLOGS"/"$SAMSUNG_DEVICENAME"-intermediate
 SAMSUNG_DIRECTORY="$OTLBLOGS"/"$SAMSUNG_DEVICENAME"
@@ -147,31 +202,4 @@ convert-samsung-mytracks () {
             fi
         fi
     done
-}
-
-################################################################################
-## Old code that may prove useful Not documented and requires the
-## package 'garmin-forerunner-tools'.
-
-OWNERGROUP="<<owner>>:<<group>>"
-fetch-garmin-305 () {
-    # Only here for historical purposes, my Garmin 305 broke after 4
-    # good years of service. Therefore, this command is disabled!
-    # Requires the package from
-    # https://code.google.com/p/garmintools/.
-    return 1
-    pushd . >> /dev/null
-    cd "$OTLBLOGS"
-    # this is me, because the command required root
-    sudo chown -R "$OWNERGROUP" garmin-305
-    cd garmin-305
-    sudo garmin_save_runs
-    # XXXX oh boy.... assuming garmin names have NO whitespace
-    for f in $(find . -iname "*.gmn"); do
-        [[ -e "$f" ]] || continue
-        if [[ ! -f ${f%.gmn}.tcx ]]; then
-            gmn2tcx "$f" > ${f%.gmn}.tcx
-        fi
-    done
-    popd >> /dev/null
 }

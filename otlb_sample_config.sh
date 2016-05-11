@@ -4,12 +4,12 @@
 #
 # Old code is included for the Garmin 305.
 #
-# Copyright (C) 2015-2016 Andrew Kroshko, all rights reserved.
+# Copyright (C) 2015-2016, Andrew Kroshko, all rights reserved.
 #
 # Author: Andrew Kroshko
 # Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 # Created: Fri Mar 27, 2015
-# Version: 20151201
+# Version: 20160511
 # URL: https://github.com/akroshko/emacs-otlb
 #
 # This program is free software: you can redistribute it and/or modify
@@ -48,12 +48,6 @@ ANTCONFIG=~/.config/antfs-cli/"$ANTID"
 # device name, this must be the same as the elisp variable
 # otlb-gps-device-primary, but with dashes instead of spaces
 DEVICENAME="<<model>>-$ANTID"
-# these are good defaults if things have been installed with pip and
-# not completely configured, the location of 'FIT-TO-TCX' can also be
-# included
-OTLBPYTHONPATH=/usr/local/lib/python2.7/site-packages/
-# the FIT-TO-TCX path is a sibling directory by default
-FITOTOTCXPATH=`dirname $0`/../FIT-TO-TCX/fittotcx.py
 ########################################
 # secondary device, the Samsung Galaxy SIII
-SAMSUNG_DEVICENAME="<<model>>-<<application name>>"
+# SAMSUNG_DEVICENAME="<<model>>-<<application name>>"

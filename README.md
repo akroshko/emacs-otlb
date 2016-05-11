@@ -48,15 +48,14 @@ directory from https://github.com using the commands in order:
 
     pip install git+git://github.com/Tigge/openant.git
     pip install git+git://github.com/Tigge/antfs-cli.git
-    pip install git+git://github.com/Tigge/FIT-to-TCX.git
 
 It has been found anything but the latest versions of the above
 *Python* packages do not work well.
 
 The GPS devices used so far are a Garmin 310XT and the Samsung Galaxy
 SIII smartphone with the
-[My Tracks](https://play.google.com/store/apps/details?id=com.google.android.maps.mytracks)
-application.
+[RunnerUp](https://play.google.com/store/apps/details?id=org.runnerup&hl=en)
+application or any other that exports *gpx* or *tcx* files.
 
 ##Configuration
 
@@ -75,7 +74,6 @@ The environment variables that need to be set are:
     export ANTID="<<ant device id>>"                               # the ID number of the ant device
     export ANTCONFIG="$OTLBLOGS"/antfs-cli/"$ANTID"                # the location to store the antfs-cli files
     export ANTDEVICENAME="garmin-310-$ANTID"                       # value for the Garmin 310
-    export OTLBPYTHONPATH=/usr/local/lib/python2.7/site-packages/  # value on my machine
 
 The directory given by `$ANTCONFIG` must be symlinked to
 `~/.config/antfs-cli` using the command:
@@ -125,6 +123,8 @@ or two and this is done with:
 
 Using otlb in Emacs
 ===================
+
+TODO: this secontion need to be updated
 
 After following the basic installation, run Emacs with `emacs -q
 --load otlb-sample-init.el` to use the sample configuration.
@@ -218,8 +218,6 @@ Planned Development
 
 - incorporate data better from handheld GPSs
 
-- possibly read `.fit` files directly
-
 - examine how to effectively edit and use incomplete data
 
 - better handling of how good/bad data is incorporated
@@ -227,8 +225,6 @@ Planned Development
 - better and quicker plotting on maps (a preview window would be nice)
 
 - allow attachments for particular entry (photos, datafiles, etc.)
-
-- how to incorporate other kinds of training?
 
 - better way of selecting interesting data, rather than elisp
   expressions
@@ -238,12 +234,6 @@ Planned Development
 - better handling to get appropriate summary of retired footwear
 
 ## Bugs and other defects
-
-- the code (especially some of the XML and data selection code) is
-very hacky right now
-
-- read XML better and clean up the associated file, i.e., use
-something like XPath rather than `xml-parse-file` from elisp
 
 - need to deal consistently with corner cases, e.g., activities
 crossing midnight Sunday or similar situations

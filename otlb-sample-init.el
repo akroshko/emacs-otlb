@@ -1,12 +1,12 @@
 ;;; otlb-sample-init.el --- A sample init file I used for testing
 ;;; this library in isolation from my main Emacs installation.
 ;;
-;; Copyright (C) 2015, Andrew Kroshko, all rights reserved.
+;; Copyright (C) 2015-2016, Andrew Kroshko, all rights reserved.
 ;;
 ;; Author: Andrew Kroshko
 ;; Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com@gmail.com>
 ;; Created: Fri Apr 10, 2015
-;; Version: 20160130
+;; Version: 20160511
 ;; URL: https://github.com/akroshko/emacs-otlb
 ;;
 ;; This program is free software; you can redistribute it and/or

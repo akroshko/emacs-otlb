@@ -1,12 +1,12 @@
 #! /usr/bin/python
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2015-2016 Andrew Kroshko, all rights reserved.
+# Copyright (C) 2015-2016, Andrew Kroshko, all rights reserved.
 #
 # Author: Andrew Kroshko
 # Maintainer: Andrew Kroshko <akroshko@gmail.com>
 # Created: Sat Mar 28, 2015
-# Version: 20151201
+# Version: 20160511
 # URL: https://github.com/akroshko/python-stdlib-personal
 #
 # This program is free software: you can redistribute it and/or modify

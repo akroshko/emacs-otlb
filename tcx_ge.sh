@@ -1,12 +1,12 @@
 #!/bin/bash
 # View the given TCX file in Google Earth.
 #
-# Copyright (C) 2015-2016 Andrew Kroshko, all rights reserved.
+# Copyright (C) 2015-2016, Andrew Kroshko, all rights reserved.
 #
 # Author: Andrew Kroshko
 # Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 # Created: Fri Mar 27, 2015
-# Version: 20151201
+# Version: 20160511
 # URL: https://github.com/akroshko/emacs-otlb
 #
 # This program is free software: you can redistribute it and/or modify
@@ -26,7 +26,13 @@ main () {
     # convert to tmp
     BASENAME=$(basename "$1")
     TMPFILE=$(mktemp --suffix=.kml)
-    gpsbabel -i gtrnctr -f "$1" -o kml -F "${TMPFILE}"
+    if [[ "$1" == *.tcx ]]; then
+        gpsbabel -i gtrnctr -f "$1" -o kml -F "${TMPFILE}"
+    elif [[ "$1" == *.gpx ]]; then
+        gpsbabel -i gpx -f "$1" -o kml -F "${TMPFILE}"
+    elif [[ "$1" == *.fit ]]; then
+        gpsbabel -i garmin_fit -f "$1" -o kml -F "${TMPFILE}"
+    fi
     googleearth "${TMPFILE}"
 }
 main "$@"

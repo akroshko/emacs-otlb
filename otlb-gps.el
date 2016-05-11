@@ -2,12 +2,12 @@
 ;;; which is centered around GPS data that has been downloaded from a
 ;;; Garmin 310XT fitness watch or Samsung Galaxy SIII phone.
 ;;
-;; Copyright (C) 2015, Andrew Kroshko, all rights reserved.
+;; Copyright (C) 2015-2016, Andrew Kroshko, all rights reserved.
 ;;
 ;; Author: Andrew Kroshko
 ;; Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 ;; Created: Sun Apr  5, 2015
-;; Version: 20160130
+;; Version: 20160511
 ;; URL: https://github.com/akroshko/emacs-otlb
 ;;
 ;; This program is free software; you can redistribute it and/or
@@ -112,12 +112,14 @@ in appropriate place."
 
 
 (defun otlb-gps-mode-map ()
+  "Return a standard mode map for otlb-gps."
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "s-l *")   'otlb-gps-recalculate-all)
     (define-key map (kbd "s-l c")   'otlb-gps-insert-conditions)
     (define-key map (kbd "s-l f")   'otlb-gps-fetch)
     (define-key map (kbd "s-l g")   'otlb-gps-open-google-earth)
     (define-key map (kbd "s-l i")   'otlb-gps-insert)
+    (define-key map (kbd "s-l M-i") 'otlb-gps-insert-auxiliary)
     (define-key map (kbd "s-l l")   'otlb-gps-cycle)
     (define-key map (kbd "s-l s-l") 'otlb-gps-cycle)
     ;; TODO: do I really want this capitalization?
@@ -135,7 +137,8 @@ in appropriate place."
     ;; menus
     (define-key map [menu-bar otlb-gps] (cons "otlb-gps" (make-sparse-keymap "otlb-gps")))
     (define-key map [menu-bar otlb-gps google-earth]             '("Open with Google Earth" . otlb-gps-open-google-earth))
-    (define-key map [menu-bar otlb-gps plot]                     '("Plot" . otlb-gps-plot))
+    (define-key map [menu-bar otlb-gps plot]                     '("Plot running weekly totals" . otlb-gps-plot-weekly-totals))
+    (define-key map [menu-bar otlb-gps plot]                     '("Plot running per-weekly totals" . otlb-gps-plot-per-week-totals))
     (define-key map [menu-bar otlb-gps separator2]               '("--"))
     (define-key map [menu-bar otlb-gps toggle-quality]           '("Toggle quality" . otlb-gps-toggle-quality))
     (define-key map [menu-bar otlb-gps toggle-type]              '("Toggle type" . otlb-gps-toggle))
@@ -159,37 +162,51 @@ in appropriate place."
   :keymap otlb-gps-mode-map)
 
 (defun otlb-buffer-p ()
+  "Check if this is an otlb buffer."
   (and (eq major-mode 'org-mode)
        (save-excursion (goto-char (point-min))
                        ;; assume two spaces in front of TBLEL
                        (re-search-forward "^  #\\+TBLEL: otlb-gps-calc" nil t))
        t))
 
-(add-hook 'org-mode-hook 'otlb-setup-hook)
-
 (defun otlb-setup-hook ()
+  "Setup when otlb-gps-mode when activating org-mode."
   (when (otlb-buffer-p)
     (otlb-gps-mode 1)))
 
+(add-hook 'org-mode-hook 'otlb-setup-hook)
+
 (defun otlb-gps-minibuffer-setup-hook ()
+  "Make sure otlb-gps-mode is not interferring with minibuffer."
   (otlb-gps-mode 0))
+
 (add-hook 'minibuffer-setup-hook 'otlb-gps-minibuffer-setup-hook)
 
 (defun otlb-gps-find-pedestrian-location ()
+  "Find the pedestrian log location."
   (interactive)
   (find-file otlb-gps-pedestrian-location))
+
 (defun otlb-gps-cycle ()
+  "Cycle headings and tables open specific to otlb-gps."
   (interactive) (otlb-gps-interactive)
   (org-cycle '(64)) (org-cycle-hide-drawers 'all))
+
 (defun otlb-gps-cycle-shift ()
+  "Cycle headings and tables closed specific to otlb-gps."
   (interactive) (otlb-gps-interactive)
   (org-shifttab '(64)) (org-cycle-hide-drawers 'all))
+
 (defun otlb-gps-plot (&optional arg)
-    (interactive "P") (otlb-gps-interactive)
-    (if (equal arg '(4))
-        (otlb-gps-plot-per-week-totals)
-      (otlb-gps-plot-weekly-totals)))
+  "Command to handle plotting of weekly totals. ARG gives
+per-week totals rather than weekly totals."
+  (interactive "P") (otlb-gps-interactive)
+  (if (equal arg '(4))
+      (otlb-gps-plot-per-week-totals)
+    (otlb-gps-plot-weekly-totals)))
+
 (defun otlb-gps-footwear (&optional arg)
+  "Command to handle tracking footwear mileage."
   (interactive "P") (otlb-gps-interactive)
   (if arg
       (progn
@@ -199,20 +216,6 @@ in appropriate place."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; reading data and inserting commands
-
-(defun otlb-gps-file-ids-primary ()
-  "Walk GPS files to get all IDs for the primary device, .tcx
-files only for now.  GPS files are in the format
-<<YYYYMMDD>>T<<HHMMSS>>, originally based off of a tool for
-downloading off of a Garmin 305."
-  (otlb-gps-file-ids otlb-gps-location-primary))
-
-(defun otlb-gps-file-ids-secondary ()
-  "Walk GPS files to get all IDs for the secondary device, .tcx
-files only for now.  GPS files are in the format
-<<YYYYMMDD>>T<<HHMMSS>>, originally based off of a tool for downloading off
-of a Garmin 305."
-  (otlb-gps-file-ids otlb-gps-location-secondary))
 
 (defun otlb-gps-file-ids (location)
   "Walk GPS files to get all IDs, .tcx files only for now.  GPS
@@ -229,7 +232,7 @@ off of a tool for downloading off of a Garmin 305."
     ;; extension
     (cond ((file-directory-p full-path)
            (cic:walk-path full-path (lambda (d f) (otlb-gps-walker d f otlb-gps-file-ids))))
-          ((string= (file-name-extension f) "tcx")
+          ((or (string= (file-name-extension f) "tcx") (string= (file-name-extension f) "gpx") (string= (file-name-extension f) "fit"))
            (add-to-list 'otlb-gps-file-ids
                         (list (file-name-sans-extension f) full-path))))))
 
@@ -241,12 +244,9 @@ off of a tool for downloading off of a Garmin 305."
 (defun otlb-gps-log-ids ()
   "Get all GPS IDs from the configured logbook."
   (setq otlb-gps-log-ids nil)
-  ; TODO need a map-file-tables thing for this
   (with-current-file-min otlb-gps-pedestrian-location
     ;; walk all tables in the file
-    ;; (org-table-map-tables 'otlb-gps-table-id)
-    (org-map-entries 'otlb-gps-table-id)
-    )
+    (org-map-entries 'otlb-gps-table-id))
   (setq otlb-gps-log-ids (sort otlb-gps-log-ids (lambda (i j) (not (string< i j))))))
 
 (defun otlb-gps-missing-ids ()
@@ -263,130 +263,31 @@ logbook."
 (defun otlb-gps-refresh-primary ()
   "Refresh information from the filesystem and logbook related to
 the primary device, generally used before an interactive command."
-  (otlb-gps-file-ids-primary)
+  (otlb-gps-file-ids (car otlb-gps-locations))
   (otlb-gps-log-ids))
 
 (defun otlb-gps-refresh-secondary ()
   "Refresh information from the filesystem and logbook related to
 the secondary device, generally used before an interactive
 command."
-  (otlb-gps-file-ids-secondary)
+  (otlb-gps-file-ids (cadr otlb-gps-locations))
   (otlb-gps-log-ids))
-
-(defun otlb-gps-read-tcx-xml (id)
-  "Read a tcx xml file and return an alist of info.
-TODO: find a much better way to handle this than awkward alists
-and XML in general"
-  ;; TODO: this can be done a lot better
-  (let* ((xml-id (xml-parse-file (cadr (assoc id otlb-gps-file-ids))))
-         (activity (assoc 'Activity (assoc 'Activities (assoc 'TrainingCenterDatabase xml-id))))
-         (laps (delq nil (mapcar (lambda (i) (if (eq (car-safe i) 'Lap) i nil)) activity)))
-         (lap-distances (delq nil (mapcar (lambda (lap)
-                                            (car (delq nil
-                                                       (mapcar
-                                                        (lambda (i)
-                                                          (when (eq (car-safe i) 'DistanceMeters)
-                                                            (string-to-number (caddr i))))
-                                                        lap))))
-                                          laps)))
-         (lap-times (delq nil (mapcar (lambda (lap)
-                                        (car (delq nil
-                                                   (mapcar
-                                                    (lambda (i)
-                                                      (when (eq (car-safe i) 'TotalTimeSeconds)
-                                                        (string-to-number (caddr i))))
-                                                    lap))))
-                                      laps)))
-         (lap-paces (mapcar (lambda (i) (/ (/ (car i) 60.0) (/ (cadr i) 1000.0))) (zip lap-times lap-distances)))
-         ;; XXXX need to figure out how to handle it when some laps have and some don't
-         (lap-heart-rates (mapcar (lambda (lap)
-                                    (car (delq nil
-                                               (mapcar
-                                                (lambda (i)
-                                                  (when (eq (car-safe i) 'AverageHeartRateBpm)
-                                                    (string-to-number (elt (cadr (cddr i)) 2))))
-                                                lap))))
-                                  laps))
-         ;; XXXX need to figure out how to handle it when some laps have and some don't
-         (lap-maximum-heart-rates (mapcar (lambda (lap)
-                                            (car (delq nil
-                                                       (mapcar
-                                                        (lambda (i)
-                                                          (when (eq (car-safe i) 'MaximumHeartRateBpm)
-                                                            (string-to-number (elt (cadr (cddr i)) 2))))
-                                                        lap))))
-                                          laps))
-         (total-distance (apply '+ lap-distances))
-         (total-time (apply '+ lap-times))
-         ;; figure out zero retardedness
-         (total-pace (/  (/ total-time 60.0) (/ total-distance 1000.0)))
-         ;; location stuff
-         (first-lap-track (assoc 'Track (car laps)))
-         (last-lap-track  (assoc 'Track (car (last laps))))
-         (first-lap-trackpoints (delq nil (mapcar (lambda (i)
-                                                    (when (eq (car-safe i) 'Trackpoint)
-                                                      i))
-                                                  first-lap-track)))
-         (last-lap-trackpoints (delq nil (mapcar (lambda (i)
-                                                   (when (eq (car-safe i) 'Trackpoint)
-                                                     i))
-                                                 last-lap-track)))
-         (first-lap-first-position (assoc 'Position (cddr (car first-lap-trackpoints))))
-         (last-lap-last-position (assoc 'Position (cddr (car (last last-lap-trackpoints 2)))))
-         (start-latitude (caddr (assoc 'LatitudeDegrees (cddr first-lap-first-position))))
-         (start-longitude (caddr (assoc 'LongitudeDegrees (cddr first-lap-first-position))))
-         (end-latitude (caddr (assoc 'LatitudeDegrees (cddr last-lap-last-position))))
-         (end-longitude (caddr (assoc 'LongitudeDegrees (cddr last-lap-last-position))))
-         ;; get start time from first lap
-         (first-lap-start-time (assoc 'Time (cddr (car first-lap-trackpoints))))
-         ;; get end time from last
-         (last-lap-end-time (assoc 'Time (cddr (car (last last-lap-trackpoints 2)))))
-             ;; time stuff
-         (zulu-time (caddr (assoc 'Id activity)))
-         (zulu-time-encode (otlb-gps-zulu-to-encode-time zulu-time))
-         (id-time-encode (otlb-gps-id-to-encode-time id))
-         (time-zone otlb-gps-time-zone))
-    ;; TODO: this can be done a lot better
-    (list
-     (list 'xml-id xml-id)
-     (list 'activity activity)
-     (list 'laps laps)
-     (list 'lap-distances lap-distances)
-     (list 'lap-times lap-times)
-     (list 'lap-paces lap-paces)
-     (list 'lap-heart-rates lap-heart-rates)
-     (list 'lap-maximum-heart-rates lap-maximum-heart-rates)
-     (list 'total-distance total-distance)
-     (list 'total-time total-time)
-     (list 'total-pace total-pace)
-     (list 'first-lap-track first-lap-track)
-     (list 'last-lap-track last-lap-track)
-     (list 'first-lap-trackpoints first-lap-trackpoints)
-     (list 'last-lap-trackpoints last-lap-trackpoints)
-     (list 'first-lap-first-position first-lap-first-position)
-     (list 'last-lap-last-position last-lap-last-position)
-     (list 'start-latitude start-latitude)
-     (list 'start-longitude start-longitude)
-     (list 'end-latitude end-latitude)
-     (list 'end-longitude end-longitude)
-     (list 'first-lap-start-time first-lap-start-time)
-     (list 'last-lap-end-time last-lap-end-time)
-     (list 'zulu-time zulu-time)
-     (list 'zulu-time-encode zulu-time-encode)
-     (list 'id-time-encode id-time-encode)
-     (list 'time-zone time-zone))))
 
 (defvar otlb-gps-id-history
   nil
   "The history of entered IDs, the same between all devices for
   now.")
 
+(defun otlb-gps-insert-auxiliary (&optional id)
+  (interactive)
+  (otlb-gps-insert t id))
+
+;; TODO: manually select device if prefix arg
 (defun otlb-gps-insert (&optional device id)
   "Insert a gps ID by selecting from missing ones."
-  (interactive "P")
+  (interactive)
   (otlb-gps-interactive-device device)
   ;; insert newest if not given
-  ;; possibly option insert only missing
   (unless id
     ;; have one alternate device for now, but will eventually choose
     (otlb-gps-missing-ids)
@@ -396,49 +297,65 @@ and XML in general"
   (goto-char (point-min))
   (when (member id otlb-gps-missing-ids)
     ;; create a new heading and table with raw data in the proper place
-    ;; parse the xml file
-    ;; get out the header data
-    (let* ((read-alist (otlb-gps-read-tcx-xml id))
-           (xml-id (cadr (assoc 'xml-id read-alist)))
-           (activity (cadr (assoc 'activity read-alist)))
-           (laps (cadr (assoc 'laps read-alist)))
-           (lap-distances (cadr (assoc 'lap-distances read-alist)))
-           (lap-times (cadr (assoc 'lap-times read-alist)))
-           (lap-paces (cadr (assoc 'lap-paces read-alist)))
-           (lap-heart-rates (cadr (assoc 'lap-heart-rates read-alist)))
-           (lap-maximum-heart-rates (cadr (assoc 'lap-maximum-heart-rates read-alist)))
-           (total-distance (cadr (assoc 'total-distance read-alist)))
-           (total-time (cadr (assoc 'total-time read-alist)))
-           (total-pace (cadr (assoc 'total-pace read-alist)))
-           (first-lap-track (cadr (assoc 'first-lap-track read-alist)))
-           (last-lap-track (cadr (assoc 'last-lap-track read-alist)))
-           (first-lap-trackpoints (cadr (assoc 'first-lap-trackpoints read-alist)))
-           (last-lap-trackpoints (cadr (assoc 'last-lap-trackpoints read-alist)))
-           (first-lap-first-position (cadr (assoc 'first-lap-first-position read-alist)))
-           (last-lap-last-position (cadr (assoc 'last-lap-last-position read-alist)))
-           (start-latitude (cadr (assoc 'start-latitude read-alist)))
-           (start-longitude (cadr (assoc 'start-longitude read-alist)))
-           (end-latitude (cadr (assoc 'end-latitude read-alist)))
-           (end-longitude (cadr (assoc 'end-longitude read-alist)))
-           (first-lap-start-time (cadr (assoc 'first-lap-start-time read-alist)))
-           (last-lap-end-time (cadr (assoc 'last-lap-end-time read-alist)))
-           (zulu-time (cadr (assoc 'zulu-time read-alist)))
-           (zulu-time-encode (cadr (assoc 'zulu-time-encode read-alist)))
-           (id-time-encode (cadr (assoc 'id-time-encode read-alist)))
-           (time-zone (cadr (assoc 'time-zone read-alist)))
+    (let* ( ;; TODO: different locations
+           (device-location (if device
+                                (cadr otlb-gps-locations)
+                              (car otlb-gps-locations)))
+           (fit-alist (cond ((file-exists-p (concat device-location "/" id ".fit"))
+                             (with-temp-buffer
+                               (insert (shell-command-to-string (concat otlb-gps-read-fit-command " " device-location "/" id ".fit --fit")))
+                               (goto-char (point-min))
+                               (mpp (buffer-substring (point-min) (point-max)))
+                               (json-read)))
+                            ((file-exists-p (concat device-location "/" id ".tcx"))
+                             (with-temp-buffer
+                               (insert (shell-command-to-string (concat otlb-gps-read-tcx-command " " device-location "/" id ".tcx --tcx")))
+                               (goto-char (point-min))
+                               (json-read)))
+                            ((file-exists-p (concat device-location "/" id ".gpx"))
+                             (with-temp-buffer
+                               (insert (shell-command-to-string (concat otlb-gps-read-gpx-command " " device-location "/" id ".gpx --gpx")))
+                               (goto-char (point-min))
+                               (json-read)))))
+           (test1 (mpp fit-alist))
+           (fit-laps (cdr (assoc 'laps fit-alist)))
+           (test2 (mpp fit-laps))
+           (lap-distances (cdr (assoc 'distance fit-laps)))
+           (lap-times (cdr (assoc 'timer-time fit-laps)))
+           (lap-paces (cdr (assoc 'pace fit-laps)))
+           (lap-heart-rates (cdr (assoc 'average-heart-rate fit-laps)))
+           (lap-maximum-heart-rates (cdr (assoc 'maximum-heart-rate fit-laps)))
+           (lap-tuple (zip lap-times
+                           lap-distances
+                           lap-paces
+                           lap-heart-rates
+                           lap-maximum-heart-rates))
+           (test (mpp lap-tuple))
+           (total-distance (cdr (assoc 'distance fit-alist)))
+           (total-time (cdr (assoc 'timer-time fit-alist)))
+           (total-pace (cdr (assoc 'pace fit-alist)))
+           (start-latitude (cdr (assoc 'start-latitude fit-alist)))
+           (start-longitude (cdr (assoc 'start-longitude fit-alist)))
+           (end-latitude (cdr (assoc 'end-latitude fit-alist)))
+           (end-longitude (cdr (assoc 'end-longitude fit-alist)))
+           (start-time (cdr (assoc 'start-time fit-alist)))
+           (end-time (cdr (assoc 'end-time fit-alist)))
+           ;; (time-zone (cdr (assoc 'time-zone fit-alist)))
+           ;; TODO: fix this
+           (time-zone -6.0 ;; (cadr (assoc 'time-zone read-alist))
+                      )
            (the-shoes (let ((shoes (otlb-gps-select-shoes)))
-                      (if (eq shoes 'cancel)
-                          ""
-                        shoes)))
+                        (if (eq shoes 'cancel)
+                            ""
+                          shoes)))
            (table ""))
       (when (eq the-shoes 'cancel)
         (setq the-shoes ""))
-      ;; read xml here
       (setq table (concat table
                           "  |---+---+---+---+---+---|\n"
                           "  | Duration | Distance | Pace | Average HR | Max HR | Shoes | Notes |\n"
                           "  |---+---+---+---+---+---|\n"))
-      (dolist (lap (zip lap-times lap-distances lap-paces lap-heart-rates lap-maximum-heart-rates))
+      (dolist (lap lap-tuple)
         (setq table (concat table "  | "
                             (otlb-gps-duration-to-string (car lap)) " | "
                             (otlb-gps-distance-to-string (cadr lap)) " | "
@@ -455,7 +372,6 @@ and XML in general"
                           "  |---+---+---+---+---+---|\n"
                           "  #+TBLEL: otlb-gps-calc\n"
                           "  #+BEGIN_COMMENT\n"
-                          "\n"
                           "  #+END_COMMENT\n"))
       ;; use temporary org-mode buffer and align table
       (setq table (with-temp-buffer
@@ -475,13 +391,13 @@ and XML in general"
       ;; create the drawer for the original table
       (insert (concat  "  :PROPERTIES:\n"
                        "  :id: " id "\n"
-                       "  :device: " (if device otlb-gps-device-secondary otlb-gps-device-primary) "\n"
+                       "  :device: " (if device (cadr otlb-gps-devices) (car otlb-gps-devices)) "\n"
                        "  :start-latitude: " start-latitude "\n"
                        "  :start-longitude: " start-longitude "\n"
                        "  :end-latitude: " end-latitude "\n"
                        "  :end-longitude: " end-longitude "\n"
-                       "  :start-time: " (otlb-gps-adjust-id-timezone (otlb-gps-time-strip (caddr first-lap-start-time))) "\n"
-                       "  :end-time: " (otlb-gps-adjust-id-timezone (otlb-gps-time-strip (caddr last-lap-end-time))) "\n"
+                       "  :start-time: " (otlb-gps-adjust-id-timezone (otlb-gps-time-strip start-time)) "\n"
+                       "  :end-time: " (otlb-gps-adjust-id-timezone (otlb-gps-time-strip end-time)) "\n"
                        "  :time-zone: " (number-to-string time-zone) "\n"
                        "  :END:\n"))
       (search-backward ":PROPERTIES:")
@@ -504,7 +420,7 @@ and XML in general"
       (search-forward ":END:")
       (search-forward ":END:")
       (forward-line 1)
-      ;; TODO replace with nicer functons used elsewhere
+      ;; TODO replace with nicer functions used elsewhere
       (cic:org-table-last-row)
       (forward-char 4)
       (org-table-next-field)
@@ -518,7 +434,7 @@ and XML in general"
   "Insert an unrecorded track.  Select start and end locations as
 well as filling in known information."
   ;; TODO, still goto kill space after insert, maybe collapse space between next heading?
-  ;; TODO: aslign table
+  ;; TODO: align table
   (interactive)
   (goto-char (point-min))
   ;; start with selecting date
@@ -1120,14 +1036,6 @@ entry."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; gps file operations
 
-;; get the entries from the previous??? map a function to extract data from table
-;; beginning and end are dates, figure out how to repesent dates
-;; use (float-time)...
-;; convert everything to float time for comparison
-;; this should return a list... of what we get out, then we can apply '+
-;; format-time-string does as well
-;; time- functions, like time-add are the way to go
-
 (defun otlb-gps-per-week-totals (start-id previous-weeks)
   "Get per-week totals for each week starting at a week starting
 Sunday/Monday midnight and containing START-ID going back
@@ -1329,15 +1237,18 @@ start time."
         (org-table-put nil 11 (concat (format "%.2f km" (cadr shoe))))
         (org-table-align)))))
 
+;; TODO: all gps locations automatically
 (defun otlb-gps-open-google-earth ()
   "Open the current logbook entry on Google Earth."
   (interactive)
   ;; get the current ID
   (let* ((id (otlb-gps-get-id))
          ;; TODO: allow on secondary devices too
-         (tcx-file (concat otlb-gps-location-primary "/" id ".tcx")))
+         (output-file (or (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".fit")) (concat (car otlb-gps-locations) "/" id ".fit"))
+                          (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".tcx")) (concat (car otlb-gps-locations) "/" id ".tcx"))
+                          (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".gpx")) (concat (car otlb-gps-locations) "/" id ".gpx")))))
     ;; run script to convert to gpx and open in Google Earth
-    (start-process "google earth" nil "nohup" otlb-gps-map-command tcx-file)))
+    (start-process "google earth" nil "nohup" otlb-gps-map-command output-file)))
 
 (defun otlb-gps-calc (lisp-table)
   "Calculated an updated lisp table from the LISP-TABLE

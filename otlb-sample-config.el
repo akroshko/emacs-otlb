@@ -1,9 +1,9 @@
-;; Copyright (C) 2015, Andrew Kroshko, all rights reserved.
+;; Copyright (C) 2015-2016, Andrew Kroshko, all rights reserved.
 ;;
 ;; Author: Andrew Kroshko
 ;; Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 ;; Created: Sun Apr  5, 2015
-;; Version: 20160130
+;; Version: 20160511
 ;; URL: https://github.com/akroshko/emacs-otlb
 ;;
 ;; This program is free software; you can redistribute it and/or
@@ -56,41 +56,35 @@
   (file-name-directory load-file-name)
   "The root directory where the text logbooks are handled.")
 
-(defconst otlb-gps-device-primary
+(defconst otlb-gps-devices
   "<<model number>> <<serial number>>"
-  "The primary device.  When referencing directories the spaces
-  are replaced by dashes.  Suggested formats are \"<<model
-  number>> <<serial number>>\" or \"<<model>>
-  <<application name>>\"")
-
-(defconst otlb-gps-device-secondary
-  "<<model>> <<application name>>"
-  "The secondary device.  When referencing directories the spaces
-  are replaced by dashes.  Suggested formats are
-  \"<<model>> <<serial number>>\" or \"<<model number>>
-  <<application name>>\"")
+  "List of devices.  When referencing directories the spaces are
+  replaced by dashes.  Suggested formats are \"<<model number>>
+  <<serial number>>\" or \"<<model>> <<application name>>\"")
 
 (defconst otlb-gps-footwear-current
   (concat otlb-gps-root-text "/footwear-current.org")
   "The location of current footwear.")
 
-(defconst otlb-gps-location-primary
-  (concat otlb-gps-root-binary "/" (replace-regexp-in-string " " "-" otlb-gps-device-primary))
-  "The location where data from the primary device is stored.")
-
-(defconst otlb-gps-location-secondary
-  (concat otlb-gps-root-binary "/" (replace-regexp-in-string " " "-" otlb-gps-device-secondary))
-  "The location where data from the secondary device is stored.")
+(defconst otlb-gps-locations
+  (mapcar (lambda (e) (concat otlb-gps-root-binary "/" (replace-regexp-in-string " " "-" e))) otlb-gps-devices)
+  "The location where data from the devices are stored.")
 
 (defvar otlb-gps-time-zone
   -6.0
   "A number giving the change from Zulu time.")
 
 (defconst otlb-gps-conditions-script-command
-  (concat "python " otlb-gps-root-package "/" "scrape_weather_ec.py")
+  (concat "python " otlb-gps-root-package "/scrape_weather_ec.py")
   "The script to scrape weather, the default takes information
   from Environment Canada for Saskatoon, Saskatchewan.  Will need
   to be modified for other locations.")
+
+(defconst otlb-gps-read-fit-command
+  (concat "python " otlb-gps-root-package "/read_files.py --fit"))
+
+(defconst otlb-gps-read-tcx-command
+  (concat "python " otlb-gps-root-package "/read_files.py --tcx"))
 
 (defconst otlb-gps-map-command
   (concat otlb-gps-root-package "/tcx_ge.sh")
