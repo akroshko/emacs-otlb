@@ -134,6 +134,7 @@ in appropriate place."
     (define-key map (kbd "s-l t")   'otlb-gps-toggle)
     (define-key map (kbd "s-l u")   'otlb-gps-insert-unrecorded)
     (define-key map (kbd "s-l w")   'otlb-gps-footwear)
+    (define-key map (kbd "H-t")     'otlb-gps-toggle)
     ;; menus
     (define-key map [menu-bar otlb-gps] (cons "otlb-gps" (make-sparse-keymap "otlb-gps")))
     (define-key map [menu-bar otlb-gps google-earth]             '("Open with Google Earth" . otlb-gps-open-google-earth))
@@ -172,7 +173,8 @@ in appropriate place."
 (defun otlb-setup-hook ()
   "Setup when otlb-gps-mode when activating org-mode."
   (when (otlb-buffer-p)
-    (otlb-gps-mode 1)))
+    (otlb-gps-mode 1)
+    (org-toggle-headline-mode 0)))
 
 (add-hook 'org-mode-hook 'otlb-setup-hook)
 
@@ -963,8 +965,6 @@ meters."
   (otlb-gps-pace-to-string (/
                             (/ (otlb-gps-string-to-duration duration) 60.0)
                             (/ (otlb-gps-string-to-distance distance) 1000.0))))
-
-(add-to-list 'cic:org-mark-toggle-headline-hook 'otlb-gps-toggle)
 
 (defun otlb-gps-toggle ()
   "Toggle the type of activity for the current logbook entry."
