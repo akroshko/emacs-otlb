@@ -222,8 +222,6 @@ Planned Development
 
 - better handling of how good/bad data is incorporated
 
-- better and quicker plotting on maps (a preview window would be nice)
-
 - allow attachments for particular entry (photos, datafiles, etc.)
 
 - better way of selecting interesting data, rather than elisp
@@ -250,3 +248,5 @@ crossing midnight Sunday or similar situations
 
 - can I reduce some of the hardcoding while not unnecessarily
   increasing code complexity?
+
+- setup instructions for using nik4.py to plot
