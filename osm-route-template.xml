@@ -1,0 +1,26 @@
+<Style name="route-line" filter-mode="first">
+  <Rule>
+    <LineSymbolizer stroke-width="2" stroke="#012d64" stroke-linejoin="round" stroke-linecap="round" />
+  </Rule>
+</Style>
+<Layer name="route-line" status="off" srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs">
+    <StyleName>route-line</StyleName>
+    <Datasource>
+       <Parameter name="type">ogr</Parameter>
+       <Parameter name="file">/home/akroshko/cic-autosync-binary-personal/org-logs-binary/aux-devices/20160507T193133.gpx</Parameter>
+       <Parameter name="layer">tracks</Parameter>
+    </Datasource>
+</Layer>
+<Style name="route-points" filter-mode="first">
+  <Rule>
+    <PointSymbolizer />
+  </Rule>
+</Style>
+<Layer name="route-points" status="off" srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs">
+    <StyleName>route-ponts</StyleName>
+    <Datasource>
+       <Parameter name="type">ogr</Parameter>
+       <Parameter name="file">/tmp/otlb-gps-temp.gpx</Parameter>
+       <Parameter name="layer">track_points</Parameter>
+    </Datasource>
+</Layer>

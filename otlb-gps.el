@@ -118,6 +118,7 @@ in appropriate place."
     (define-key map (kbd "s-l c")   'otlb-gps-insert-conditions)
     (define-key map (kbd "s-l f")   'otlb-gps-fetch)
     (define-key map (kbd "s-l g")   'otlb-gps-open-google-earth)
+    (define-key map (kbd "s-l M-g") 'otlb-gps-open-cached-osm)
     (define-key map (kbd "s-l i")   'otlb-gps-insert)
     (define-key map (kbd "s-l M-i") 'otlb-gps-insert-auxiliary)
     (define-key map (kbd "s-l l")   'otlb-gps-cycle)
@@ -161,6 +162,11 @@ in appropriate place."
   :global nil
   :lighter " otlb"
   :keymap otlb-gps-mode-map)
+
+(add-hook 'otlb-gps-mode-hook 'otlb-gps-mode-init)
+(defun otlb-gps-mode-init ()
+  (when (and otlb-gps-mode (functionp 'hl-line-mode))
+    (hl-line-mode 1)))
 
 (defun otlb-buffer-p ()
   "Check if this is an otlb buffer."
@@ -386,7 +392,7 @@ command."
       (move-end-of-line 1)
       (insert "\n")
       (org-insert-heading)
-      (insert (concat (otlb-gps-id-to-full-date id) " :running: "))
+      (insert (concat (otlb-gps-id-to-full-date id) " :running:"))
       ;; add a property drawer
       (move-end-of-line 1)
       (insert "\n")
@@ -474,7 +480,7 @@ well as filling in known information."
     (move-end-of-line 1)
     (insert "\n")
     (org-insert-heading)
-    (insert (concat (otlb-gps-id-to-full-date the-start-id) " :running:unrecorded: "))
+    (insert (concat (otlb-gps-id-to-full-date the-start-id) " :running:unrecorded:"))
     (move-end-of-line 1)
     (insert "\n")
     ;; insert properties
@@ -994,7 +1000,7 @@ meters."
         ;; replace instances of current-tag with one at next-index
         (setq new-tags (cl-subst (elt otlb-gps-taglist next-index) current-tag current-tags :test 'equal))
         ;; delete tags and replace them
-        (when (search-forward-regexp ":[[:alnum:]:]*:$"  nil t)
+        (when (search-forward-regexp ":[[:alnum:]:]*:$" nil t)
           (replace-match (concat ":" (mapconcat 'identity new-tags ":") ":")))))
     t))
 
@@ -1236,6 +1242,16 @@ start time."
         (search-forward (car shoe))
         (org-table-put nil 11 (concat (format "%.2f km" (cadr shoe))))
         (org-table-align)))))
+
+(defun otlb-gps-open-cached-osm ()
+  "Open the current logbook entry on Google Earth."
+  (interactive)
+  ;; get the current ID
+  (let* ((id (otlb-gps-get-id))
+         ;; TODO: allow on secondary devices too
+         (output-file (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".png")) (concat (car otlb-gps-locations) "/" id ".png"))))
+    ;; run script to convert to gpx and open in Google Earth
+    (start-process "geeqie otlb" nil "nohup" "geeqie" "-r" (concat "file:" output-file))))
 
 ;; TODO: all gps locations automatically
 (defun otlb-gps-open-google-earth ()

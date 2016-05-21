@@ -79,14 +79,14 @@ fetch-garmin-310 () {
     fi
     # loop over downloaded files to see if they are already in intermediate directory
     if [[ "$1" == "--process" ]]; then
-        OTLBSOURCE="$(get-otlb-source)"
+        local OTLBSOURCE="$(get-otlb-source)"
         pushd . >> /dev/null
         cd "$OTLBLOGS"
         for f in $FITDIRECTORY/*; do
             # TODO: delete corrupted files to avoid nonsense
-            local GPSNAME=$(basename -s .fit "$f")
+            # local GPSNAME=$(basename -s .fit "$f")
             # TODO: python should give list of fit-ids instead
-            XMLID=$(python "$OTLBSOURCE"/read_files.py "$f" --fit-id)
+            local XMLID=$(python "$OTLBSOURCE"/read_files.py "$f" --fit-id)
             if [[ ! -e "${TCXDIRECTORY}/${XMLID}.tcx" ]] && [[ ! -e "${TCXDIRECTORY}/${XMLID}.fit" ]]; then
                 echo "Missing $XMLID! Copying!"
                 cp "$f" "${TCXDIRECTORY}/${XMLID}.fit"
@@ -116,11 +116,17 @@ convert-aux-devices () {
     done
 }
 
+get-id-fit () {
+    local OTLBSOURCE="$(get-otlb-source)"
+    local XMLID=$(python "$OTLBSOURCE"/read_files.py "$1" --fit-id)
+    echo $XMLID
+}
+
 # TODO: deal with corrupt files
 get-id-tcx () {
     # get the id for a tcx file
     # TODO: should I get rid of the xmlstarlet and just use Python for everything
-    OTLBSOURCE="$(get-otlb-source)"
+    local OTLBSOURCE="$(get-otlb-source)"
     # get a timestamp from first track
     local XMLID=`xmlstarlet sel -t -v "//*[local-name() = 'Id']" -n "$1"`
     if [[ -z "$XMLID" ]]; then
@@ -136,7 +142,7 @@ get-id-tcx () {
 get-id-gpx () {
     # get the id for a gpx file
     # TODO: should I get rid of the xmlstarlet and just use Python for everything
-    OTLBSOURCE="$(get-otlb-source)"
+    local OTLBSOURCE="$(get-otlb-source)"
     # get a timestamp from first track
     local XMLID=`xmlstarlet sel -t -v "//*[local-name() = 'metadata']/*[local-name() = 'time']" -n "$1"`
     XMLID=${XMLID//-/}
@@ -144,6 +150,46 @@ get-id-gpx () {
     echo $(python "$OTLBSOURCE"/read_files.py "$XMLID" --utc)
     # rename for import
 }
+
+create-osm-maps () {
+    # meant to run in current directory
+    for f in ${PWD}/*; do
+        create-osm-map "$f"
+    done
+}
+
+create-osm-map () {
+    OTLBSOURCE="$(get-otlb-source)"
+    # TODO: create a tmp working directory
+    # TODO: needs a lost of work to avoid ~/osm silliness
+    # TMPDIR=$(mktemp -d)
+    # get the id
+    if [[ ${1##*.} == "fit" ]]; then
+        # TODO: not working yet
+        local THEID="$(get-id-fit $1)"
+    elif [[ ${1##*.} == "gpx" ]]; then
+        local THEID="$(get-id-gpx $1)"
+    else
+        return 1
+    fi
+    if [[ -e "/tmp/otlb-gps-temp.gpx" ]]; then
+        rm "/tmp/otlb-gps-temp.gpx"
+    fi
+    # convert to gpx if not already gpx, otherwise just copy to tmp directory
+    if [[ ${1##*.} == "fit" ]]; then
+        gpsbabel -i garmin_fit -f "${1}" -o gpx -F "/tmp/otlb-gps-temp.gpx"
+    elif [[ ${1##*.} == "tcx" ]]; then
+        gpsbabel -i tcx -f "${1}" -o gpx -F "/tmp/otlb-gps-temp.gpx"
+    else
+        cp "${1}" "/tmp/otlb-gps-temp.gpx"
+    fi
+    # parse the raw osm file, add the appropriate route file, and add to the directory
+    # put the output file where it belongs
+    # TODO: eventually just merge xml's
+    cp "$OTLBSOURCE/osm-route.xml" ~/osm/openstreetmap-carto/osm-route.xml
+    nik4.py --fit route-line --add-layers route-line,route-points --padding 100 -z 17 ~/osm/openstreetmap-carto/osm-route.xml "$(dirname $1)/${THEID}.png"
+}
+
 
 ################################################################################
 ## Old code that may prove useful Not documented and requires the
