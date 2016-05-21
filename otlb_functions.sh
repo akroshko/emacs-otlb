@@ -60,6 +60,7 @@ fetch-garmin-310 () {
     # set up the specific directories based on the confiuration
     local INTERMEDIATEDIRECTORY="$OTLBLOGS"/"$DEVICENAME"-intermediate
     local FITDIRECTORY="$ANTCONFIG"/activities
+    # TODO: outdated name
     local TCXDIRECTORY="$OTLBLOGS"/"$DEVICENAME"
     # there's probably a better way of dealing with arguments
     if [[ -z "$1" ]]; then
@@ -92,6 +93,8 @@ fetch-garmin-310 () {
                 cp "$f" "${TCXDIRECTORY}/${XMLID}.fit"
             fi
         done
+        cd "${TCXDIRECTORY}"
+        create-osm-maps
         popd >> /dev/null
     fi
 }
@@ -154,7 +157,10 @@ get-id-gpx () {
 create-osm-maps () {
     # meant to run in current directory
     for f in ${PWD}/*; do
-        create-osm-map "$f"
+        if [[ ! -e ${f%%.*}.png ]]; then
+            echo "Creating map for $f"
+            create-osm-map "$f"
+        fi
     done
 }
 
