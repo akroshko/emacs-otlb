@@ -7,7 +7,7 @@
 ;; Author: Andrew Kroshko
 ;; Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 ;; Created: Sun Apr  5, 2015
-;; Version: 20160511
+;; Version: 20160525
 ;; URL: https://github.com/akroshko/emacs-otlb
 ;;
 ;; This program is free software; you can redistribute it and/or
@@ -117,8 +117,8 @@ in appropriate place."
     (define-key map (kbd "s-l *")   'otlb-gps-recalculate-all)
     (define-key map (kbd "s-l c")   'otlb-gps-insert-conditions)
     (define-key map (kbd "s-l f")   'otlb-gps-fetch)
-    (define-key map (kbd "s-l g")   'otlb-gps-open-google-earth)
-    (define-key map (kbd "s-l M-g") 'otlb-gps-open-cached-osm)
+    (define-key map (kbd "s-l g") 'otlb-gps-open-cached-osm)
+    (define-key map (kbd "s-l M-g")   'otlb-gps-open-google-earth)
     (define-key map (kbd "s-l i")   'otlb-gps-insert)
     (define-key map (kbd "s-l M-i") 'otlb-gps-insert-auxiliary)
     (define-key map (kbd "s-l l")   'otlb-gps-cycle)
