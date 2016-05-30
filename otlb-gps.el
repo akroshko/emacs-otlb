@@ -531,7 +531,7 @@ well as filling in known information."
   (interactive) (otlb-gps-interactive)
   ;; TODO: configure command a little better
   ;; TODO: outdated because of no options too
-  (start-process "terminal" nil "nohup" "gnome-terminal" "--execute" "bash" "-i" "-c" "(fetch-garmin-310);while read -r -t 0;do read -r; done;read -p 'Press enter to continue...'"))
+  (start-process "terminal" nil "nohup" "rxvt-unicode" "-e" "bash" "-i" "-c" "(fetch-garmin-310);while read -r -t 0;do read -r; done;read -p 'Press enter to continue...'"))
 
 ;; sort the entries by reverse date/time, bubble sort is nice when log
 ;; is already almost sorted
