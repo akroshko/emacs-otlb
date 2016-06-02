@@ -50,7 +50,11 @@ import lxml
 from lxml import etree
 import json
 import sys
+import tempfile
+import subprocess
 import math
+import os
+import time
 from collections import namedtuple
 from pprint import pprint
 sys.path.append('/usr/local/lib/python2.7/site-packages')
@@ -94,6 +98,7 @@ def main_fit(argv):
     session = next(activity.get_records_by_type('session'))
     session_dict={}
     start_time=local_date_to_utc(session.get_data("start_time"))
+    real_start_time=session.get_data("start_time")
     session_dict['elapsed-time']=session.get_data("total_elapsed_time")
     timer_time=session.get_data("total_timer_time")
     session_dict['timer-time']=timer_time
@@ -108,7 +113,9 @@ def main_fit(argv):
     session_dict['end-time']=end_time_id
     session_dict['laps']={}
     session_dict['laps']['start-time']=[]
+    session_dict['laps']['start-timestamp']=[]
     session_dict['laps']['end-time']=[]
+    session_dict['laps']['end-timestamp']=[]
     session_dict['laps']['timer-time']=[]
     session_dict['laps']['distance']=[]
     session_dict['laps']['pace']=[]
@@ -136,6 +143,7 @@ def main_fit(argv):
             if tts >= start_time and tts <= end_time:
                 session_dict['laps']['trackpoints'].append({})
                 session_dict['laps']['trackpoints'][-1]['timestamp']=str(local_date_to_utc(trackpoint.get_data("timestamp")))
+                session_dict['laps']['trackpoints'][-1]['elapsed-time']=(trackpoint.get_data("timestamp")-real_start_time).seconds
                 session_dict['laps']['trackpoints'][-1]['latitude-position']=trackpoint.get_data("position_lat")
                 session_dict['laps']['trackpoints'][-1]['longitude-position']=trackpoint.get_data("position_long")
                 session_dict['laps']['trackpoints'][-1]['distance']=trackpoint.get_data("distance")
@@ -156,7 +164,65 @@ def main_fit(argv):
     session_dict['start-longitude']=session_dict['laps']['trackpoints'][0]['longitude']
     session_dict['end-latitude']=session_dict['laps']['trackpoints'][-1]['latitude']
     session_dict['end-longitude']=session_dict['laps']['trackpoints'][-1]['longitude']
-    print json.dumps(session_dict)
+    return session_dict
+
+def main_graph_fitdistance(argv):
+    # graph distance vs speed, distance vs altitude
+    session_dict=main_fit(argv)
+    filename=os.path.basename(sys.argv[1])
+    # create gnuplot file
+    # gnuplot> set multiplot layout 2,1 rowsfirst
+    # multiplot> plot "test.txt" using 1:2 with lines
+    # multiplot> plot "test.txt" using 1:3 with lines
+    distance_points = [(p['distance'],p['speed'],p['altitude']) for p in session_dict['laps']['trackpoints']]
+    # create tempfile
+    fd,fname = tempfile.mkstemp()
+    fh = os.fdopen(fd,'w')
+    # print '# plot "data.txt" using 1:2 with lines '
+    for p in distance_points:
+        if p[0] is None or p[1] is None or p[2] is None:
+            fh.write("%s %s %s\n" % ('nan','nan','nan'))
+        else:
+            fh.write("%f %f %f\n" % p)
+    fh.close()
+    gnuplotstring=("set multiplot layout 2,1 rowsfirst title '" + filename + "'\n" +
+                   "set grid\n" +
+                   "unset key\n" +
+                   "set title 'distance (m) vs speed (m/s)'\n" +
+                   "plot \"%s\" using 1:2 with lines\n" % fname +
+                   "set title 'distance (m) vs altitude (m)'\n" +
+                   "plot \"%s\" using 1:3 with lines\n" % fname)
+    plot = subprocess.Popen(['gnuplot','-persist'], stdin=subprocess.PIPE)
+    plot.communicate(gnuplotstring)
+
+def main_graph_fittime(argv):
+    # graph time vs speed, time vs altitude
+    session_dict=main_fit(argv)
+    filename=os.path.basename(sys.argv[1])
+    # create gnuplot file
+    # gnuplot> set multiplot layout 2,1 rowsfirst
+    # multiplot> plot "test.txt" using 1:2 with lines
+    # multiplot> plot "test.txt" using 1:3 with lines
+    distance_points = [(p['elapsed-time'],p['speed'],p['altitude']) for p in session_dict['laps']['trackpoints']]
+    # create tempfile
+    fd,fname = tempfile.mkstemp()
+    fh = os.fdopen(fd,'w')
+    # print '# plot "data.txt" using 1:2 with lines '
+    for p in distance_points:
+        if p[0] is None or p[1] is None or p[2] is None:
+            fh.write("%s %s %s\n" % ('nan','nan','nan'))
+        else:
+            fh.write("%f %f %f\n" % p)
+    fh.close()
+    gnuplotstring=("set multiplot layout 2,1 rowsfirst title '" + filename + "'\n" +
+                   "set grid\n" +
+                   "unset key\n" +
+                   "set title 'time (s) vs speed (m/s)'\n" +
+                   "plot \"%s\" using 1:2 with lines\n" % fname +
+                   "set title 'time (s) vs altitude (m)'\n" +
+                   "plot \"%s\" using 1:3 with lines\n" % fname)
+    plot = subprocess.Popen(['gnuplot','-persist'], stdin=subprocess.PIPE)
+    plot.communicate(gnuplotstring)
 
 def main_tcx(argv):
    # XXXX: requires full path
@@ -195,7 +261,7 @@ def main_tcx(argv):
       tcx_dict['distance']+=int(d)
    tcx_dict['distance']=tcx_dict['distance']
    tcx_dict['pace']=(1000./(tcx_dict['distance']/tcx_dict['timer-time']))/60.
-   print(json.dumps(tcx_dict))
+   return tcx_dict
 
 def main_fit_id(argv):
     filename=sys.argv[1]
@@ -259,7 +325,7 @@ def main_gpx(argv):
     gpx_dict['laps']['maximum-heart-rate'] = len(gpx_dict['laps']['pace'])*[None]
     gpx_dict['distance']=total_distance
     gpx_dict['pace']=(1000./(gpx_dict['distance']/gpx_dict['timer-time']))/60.
-    print(json.dumps(gpx_dict))
+    return gpx_dict
 
 def main_utc(argv):
     print id_to_utc(argv[1])
@@ -309,12 +375,16 @@ def haversine_distance(origin, destination):
 if __name__ == "__main__":
     # TODO: detect filetype automatically
     if '--fit' in sys.argv:
-        main_fit(sys.argv)
+        print json.dumps(main_fit(sys.argv))
+    elif '--graph-fit-distance' in sys.argv:
+        main_graph_fitdistance(sys.argv)
+    elif '--graph-fit-time' in sys.argv:
+        main_graph_fittime(sys.argv)
     elif '--fit-id' in sys.argv:
         main_fit_id(sys.argv)
     elif '--tcx' in sys.argv:
-        main_tcx(sys.argv)
+        print json.dumps(main_tcx(sys.argv))
     elif '--gpx' in sys.argv:
-        main_gpx(sys.argv)
+        print json.dumps(main_gpx(sys.argv))
     elif '--utc' in sys.argv:
         main_utc(sys.argv)

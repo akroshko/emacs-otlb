@@ -117,8 +117,8 @@ in appropriate place."
     (define-key map (kbd "s-l *")   'otlb-gps-recalculate-all)
     (define-key map (kbd "s-l c")   'otlb-gps-insert-conditions)
     (define-key map (kbd "s-l f")   'otlb-gps-fetch)
-    (define-key map (kbd "s-l g") 'otlb-gps-open-cached-osm)
-    (define-key map (kbd "s-l M-g")   'otlb-gps-open-google-earth)
+    (define-key map (kbd "s-l g")   'otlb-gps-graph-distance)
+    (define-key map (kbd "s-l M-g") 'otlb-gps-graph-time)
     (define-key map (kbd "s-l i")   'otlb-gps-insert)
     (define-key map (kbd "s-l M-i") 'otlb-gps-insert-auxiliary)
     (define-key map (kbd "s-l l")   'otlb-gps-cycle)
@@ -126,10 +126,14 @@ in appropriate place."
     ;; TODO: do I really want this capitalization?
     (define-key map (kbd "s-L L")   'otlb-gps-cycle-shift)
     (define-key map (kbd "s-L s-L") 'otlb-gps-cycle-shift)
-    (define-key map (kbd "s-l m")   'otlb-gps-insert-miscellaneous)
-    (define-key map (kbd "s-l M-m") 'otlb-gps-insert-miscellaneous-ask)
+    (define-key map (kbd "s-l m")   'otlb-gps-open-cached-osm)
+    (define-key map (kbd "s-l M-m") 'otlb-gps-open-google-earth)
     (define-key map (kbd "s-l n")   'otlb-gps-insert-note)
-    (define-key map (kbd "s-l p")   'otlb-gps-plot)
+    ;; TODO: o=other, change names
+    (define-key map (kbd "s-l o")   'otlb-gps-insert-miscellaneous)
+    (define-key map (kbd "s-l M-o") 'otlb-gps-insert-miscellaneous-ask)
+    (define-key map (kbd "s-l M-p")   'otlb-gps-plot-running-weekly-totals)
+    (define-key map (kbd "s-l p") 'otlb-gps-plot-per-week-totals)
     (define-key map (kbd "s-l q")   'otlb-gps-toggle-quality)
     (define-key map (kbd "s-l s")   'otlb-gps-sort)
     (define-key map (kbd "s-l t")   'otlb-gps-toggle)
@@ -139,8 +143,10 @@ in appropriate place."
     ;; menus
     (define-key map [menu-bar otlb-gps] (cons "otlb-gps" (make-sparse-keymap "otlb-gps")))
     (define-key map [menu-bar otlb-gps google-earth]             '("Open with Google Earth" . otlb-gps-open-google-earth))
-    (define-key map [menu-bar otlb-gps plot]                     '("Plot running weekly totals" . otlb-gps-plot-weekly-totals))
-    (define-key map [menu-bar otlb-gps plot]                     '("Plot running per-weekly totals" . otlb-gps-plot-per-week-totals))
+    (define-key map [menu-bar otlb-gps plot-running-weekly]      '("Plot running weekly totals" . otlb-gps-plot-running-weekly-totals))
+    (define-key map [menu-bar otlb-gps plot-per-weekly]          '("Plot per-week totals" . otlb-gps-plot-per-week-totals))
+    (define-key map [menu-bar otlb-gps graph-time]               '("Graph by time" . otlb-gps-graph-time))
+    (define-key map [menu-bar otlb-gps graph-distance]           '("Graph by distance" . otlb-gps-graph-distance))
     (define-key map [menu-bar otlb-gps separator2]               '("--"))
     (define-key map [menu-bar otlb-gps toggle-quality]           '("Toggle quality" . otlb-gps-toggle-quality))
     (define-key map [menu-bar otlb-gps toggle-type]              '("Toggle type" . otlb-gps-toggle))
@@ -204,14 +210,6 @@ in appropriate place."
   "Cycle headings and tables closed specific to otlb-gps."
   (interactive) (otlb-gps-interactive)
   (org-shifttab '(64)) (org-cycle-hide-drawers 'all))
-
-(defun otlb-gps-plot (&optional arg)
-  "Command to handle plotting of weekly totals. ARG gives
-per-week totals rather than weekly totals."
-  (interactive "P") (otlb-gps-interactive)
-  (if (equal arg '(4))
-      (otlb-gps-plot-per-week-totals)
-    (otlb-gps-plot-weekly-totals)))
 
 (defun otlb-gps-footwear (&optional arg)
   "Command to handle tracking footwear mileage."
@@ -594,7 +592,7 @@ TODO: need a better description of this"
   (unless previous-weeks
     ;; go back about 6 months?
     (setq previous-weeks 26))
-  (let ((per-weekly-totals (otlb-gps-per-week-totals start-id previous-weeks))
+  (let ((weekly-totals (otlb-gps-per-weekly-totals start-id previous-weeks))
         (dat-file (make-temp-file "otlb-gps" nil ".dat"))
         (script-file (make-temp-file "otlb-gps" nil ".gnuplot"))
         (last-week-end nil)
@@ -602,7 +600,7 @@ TODO: need a better description of this"
     (save-window-excursion
       (with-current-file-min dat-file
         (erase-buffer)
-        (dolist (thing per-weekly-totals)
+        (dolist (thing weekly-totals)
           (let ((total-thing (cadr (assoc 'total thing)))
                 (run-thing (cadr (assoc 'running thing)))
                 (walk-thing (cadr (assoc 'walking thing)))
@@ -654,8 +652,8 @@ TODO: need a better description of this"
         (kill-buffer))
       (bury-buffer (get-buffer "*gnuplot*")))))
 
-;; (otlb-gps-weekly-totals (otlb-gps-get-id) 1 4)
-(defun otlb-gps-plot-weekly-totals (&optional start-id n-weekly previous-weeks)
+;; (otlb-gps-running-weekly-totals (otlb-gps-get-id) 1 4)
+(defun otlb-gps-plot-running-weekly-totals (&optional start-id n-weekly previous-weeks)
   "Plot starting at START-ID for N-WEEKLY for PREVIOUS-WEEKS
 weeks.
 TODO: need a better description of this
@@ -669,7 +667,7 @@ TODO: create buffer for looking at raw data?
   ;; possibility of going back to same calendar day
   (unless previous-weeks
     (setq previous-weeks 4))
-  (let ((weekly-totals (otlb-gps-weekly-totals start-id n-weekly previous-weeks))
+  (let ((weekly-totals (otlb-gps-running-weekly-totals start-id n-weekly previous-weeks))
         (dat-file (make-temp-file "otlb-gps" nil ".dat"))
         (script-file (make-temp-file "otlb-gps" nil ".gnuplot"))
         (last-week-end nil)
@@ -701,7 +699,7 @@ TODO: create buffer for looking at raw data?
         (erase-buffer)
         (insert "clear\n")
         (insert "reset\n")
-        (insert (concat "set title 'Sum of mileage for previous " (number-to-string n-weekly) " week from each day starting at " start-id ", back " (number-to-string previous-weeks) " weeks'\n"))
+        (insert (concat "set title 'Running sum of mileage for previous " (number-to-string n-weekly) " week from each day starting at " start-id ", back " (number-to-string previous-weeks) " weeks'\n"))
         (insert "set timefmt \"%Y%m%dT%H%M%S\"\n")
         (insert "set xrange [*:*] reverse\n")
         (insert "set xdata time\n")
@@ -1042,10 +1040,10 @@ entry."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; gps file operations
 
-(defun otlb-gps-per-week-totals (start-id previous-weeks)
-  "Get per-week totals for each week starting at a week starting
-Sunday/Monday midnight and containing START-ID going back
-PREVIOUS-WEEKS weeks."
+(defun otlb-gps-per-weekly-totals (start-id previous-weeks)
+  "Get running weekly totals for each week starting at a week
+starting Sunday/Monday midnight and containing START-ID going
+back PREVIOUS-WEEKS weeks."
   (let* ((days-back (otlb-gps-id-range-weekly
                      (otlb-gps-id-sunday-midnight start-id)
                      previous-weeks))
@@ -1058,7 +1056,7 @@ PREVIOUS-WEEKS weeks."
              (list (list 'week-end (elt days-back count)))))
     weekly-totals))
 
-(defun otlb-gps-weekly-totals (start-id n-weekly previous-weeks)
+(defun otlb-gps-running-weekly-totals (start-id n-weekly previous-weeks)
   "Get N-WEEKLY weekly totals for each week going back
 PREVIOUS-WEEKS weeks from START-ID."
   ;; loop over all days going back previous-weeks, and get (n)-weekly totals
@@ -1265,6 +1263,26 @@ start time."
                           (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".gpx")) (concat (car otlb-gps-locations) "/" id ".gpx")))))
     ;; run script to convert to gpx and open in Google Earth
     (start-process "google earth" nil "nohup" otlb-gps-map-command output-file)))
+
+(defun otlb-gps-graph-distance ()
+  "Build a speed/elevation graph with respect to distance."
+  (interactive)
+  (let* ((id (otlb-gps-get-id))
+         (output-file (or (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".fit")) (concat (car otlb-gps-locations) "/" id ".fit"))
+                          (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".tcx")) (concat (car otlb-gps-locations) "/" id ".tcx"))
+                          (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".gpx")) (concat (car otlb-gps-locations) "/" id ".gpx")))))
+    ;; run script to graph it
+    (start-process "graph" "*graph output*" "nohup" "python" otlb-gps-graph-fit-command output-file "--graph-fit-distance")))
+
+(defun otlb-gps-graph-time ()
+  "Build a speed/elevation graph with respect to elapsed time."
+  (interactive)
+  (let* ((id (otlb-gps-get-id))
+         (output-file (or (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".fit")) (concat (car otlb-gps-locations) "/" id ".fit"))
+                          (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".tcx")) (concat (car otlb-gps-locations) "/" id ".tcx"))
+                          (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".gpx")) (concat (car otlb-gps-locations) "/" id ".gpx")))))
+    ;; run script to graph it
+    (start-process "graph" "*graph output*" "nohup" "python" otlb-gps-graph-fit-command output-file "--graph-fit-time")))
 
 (defun otlb-gps-calc (lisp-table)
   "Calculated an updated lisp table from the LISP-TABLE
