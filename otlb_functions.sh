@@ -161,6 +161,10 @@ create-osm-maps () {
             echo "Creating map for $f"
             create-osm-map "$f"
         fi
+        # create a smaller image for previewing
+        if [[ ! -e ${f%%.*}-1280.png ]]; then
+            convert -geometry 1280x\> ${f%%.*}.png ${f%%.*}-1280.png
+        fi
     done
 }
 

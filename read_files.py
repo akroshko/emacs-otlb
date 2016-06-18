@@ -166,6 +166,13 @@ def main_fit(argv):
     session_dict['end-longitude']=session_dict['laps']['trackpoints'][-1]['longitude']
     return session_dict
 
+def mps_minpkm(s):
+    # XXXX: 16.6666666666 is conversion from m/s to min/km
+    if s:
+        return 16.6666666666/s
+    else:
+        return None
+
 def main_graph_fitdistance(argv):
     # graph distance vs speed, distance vs altitude
     session_dict=main_fit(argv)
@@ -174,7 +181,8 @@ def main_graph_fitdistance(argv):
     # gnuplot> set multiplot layout 2,1 rowsfirst
     # multiplot> plot "test.txt" using 1:2 with lines
     # multiplot> plot "test.txt" using 1:3 with lines
-    distance_points = [(p['distance'],p['speed'],p['altitude']) for p in session_dict['laps']['trackpoints']]
+
+    distance_points = [(p['distance'],mps_minpkm(p['speed']),p['altitude']) for p in session_dict['laps']['trackpoints']]
     # create tempfile
     fd,fname = tempfile.mkstemp()
     fh = os.fdopen(fd,'w')
@@ -186,11 +194,21 @@ def main_graph_fitdistance(argv):
             fh.write("%f %f %f\n" % p)
     fh.close()
     gnuplotstring=("set multiplot layout 2,1 rowsfirst title '" + filename + "'\n" +
-                   "set grid\n" +
+                   "set grid ytics mytics lc rgb \"#bbbbbb\" lt 1, lc rgb \"#bbbbbb\" lt 0\n" +
                    "unset key\n" +
-                   "set title 'distance (m) vs speed (m/s)'\n" +
+                   "set title 'distance (m) vs speed (min/km)'\n" +
+                   # TODO: want option for wider variety of speeds
+                   "set yrange [2.5:8]\n" +
+                   "set ytics 1.0\n" +
+                   "set mytics 6\n" +
                    "plot \"%s\" using 1:2 with lines\n" % fname +
                    "set title 'distance (m) vs altitude (m)'\n" +
+                   "set yrange [*:*]\n" +
+                   "set ytics 20\n" +
+                   "set ytics 50\n" +
+                   "set mytics 5\n" +
+                   "set grid mytics\n" +
+                   "set grid ytics\n" +
                    "plot \"%s\" using 1:3 with lines\n" % fname)
     plot = subprocess.Popen(['gnuplot','-persist'], stdin=subprocess.PIPE)
     plot.communicate(gnuplotstring)
@@ -203,7 +221,7 @@ def main_graph_fittime(argv):
     # gnuplot> set multiplot layout 2,1 rowsfirst
     # multiplot> plot "test.txt" using 1:2 with lines
     # multiplot> plot "test.txt" using 1:3 with lines
-    distance_points = [(p['elapsed-time'],p['speed'],p['altitude']) for p in session_dict['laps']['trackpoints']]
+    distance_points = [(p['elapsed-time'],mps_minpkm(p['speed']),p['altitude']) for p in session_dict['laps']['trackpoints']]
     # create tempfile
     fd,fname = tempfile.mkstemp()
     fh = os.fdopen(fd,'w')
@@ -215,11 +233,20 @@ def main_graph_fittime(argv):
             fh.write("%f %f %f\n" % p)
     fh.close()
     gnuplotstring=("set multiplot layout 2,1 rowsfirst title '" + filename + "'\n" +
-                   "set grid\n" +
+                   "set grid ytics mytics lc rgb \"#bbbbbb\" lt 1, lc rgb \"#bbbbbb\" lt 0\n" +
                    "unset key\n" +
-                   "set title 'time (s) vs speed (m/s)'\n" +
+                   "set title 'time (s) vs speed (min/km)'\n" +
+                   # TODO: want option for wider variety of speeds
+                   "set yrange [2.5:8]\n" +
+                   "set ytics 1.0\n" +
+                   "set mytics 6\n" +
                    "plot \"%s\" using 1:2 with lines\n" % fname +
                    "set title 'time (s) vs altitude (m)'\n" +
+                   "set yrange [*:*]\n" +
+                   "set ytics 50\n" +
+                   "set mytics 5\n" +
+                   "set grid mytics\n" +
+                   "set grid ytics\n" +
                    "plot \"%s\" using 1:3 with lines\n" % fname)
     plot = subprocess.Popen(['gnuplot','-persist'], stdin=subprocess.PIPE)
     plot.communicate(gnuplotstring)

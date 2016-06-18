@@ -126,14 +126,16 @@ in appropriate place."
     ;; TODO: do I really want this capitalization?
     (define-key map (kbd "s-L L")   'otlb-gps-cycle-shift)
     (define-key map (kbd "s-L s-L") 'otlb-gps-cycle-shift)
+    ;; TODO: make sure this increments workouts
+    (define-key map (kbd "H-d")     'otlb-gps-map-preview)
     (define-key map (kbd "s-l m")   'otlb-gps-open-cached-osm)
     (define-key map (kbd "s-l M-m") 'otlb-gps-open-google-earth)
     (define-key map (kbd "s-l n")   'otlb-gps-insert-note)
     ;; TODO: o=other, change names
     (define-key map (kbd "s-l o")   'otlb-gps-insert-miscellaneous)
     (define-key map (kbd "s-l M-o") 'otlb-gps-insert-miscellaneous-ask)
-    (define-key map (kbd "s-l M-p")   'otlb-gps-plot-running-weekly-totals)
-    (define-key map (kbd "s-l p") 'otlb-gps-plot-per-week-totals)
+    (define-key map (kbd "s-l M-p") 'otlb-gps-plot-running-weekly-totals)
+    (define-key map (kbd "s-l p")   'otlb-gps-plot-per-week-totals)
     (define-key map (kbd "s-l q")   'otlb-gps-toggle-quality)
     (define-key map (kbd "s-l s")   'otlb-gps-sort)
     (define-key map (kbd "s-l t")   'otlb-gps-toggle)
@@ -143,6 +145,7 @@ in appropriate place."
     ;; menus
     (define-key map [menu-bar otlb-gps] (cons "otlb-gps" (make-sparse-keymap "otlb-gps")))
     (define-key map [menu-bar otlb-gps google-earth]             '("Open with Google Earth" . otlb-gps-open-google-earth))
+    (define-key map [menu-bar otlb-gps osm]                      '("Open cached OSM"        . otlb-gps-open-cached-osm))
     (define-key map [menu-bar otlb-gps plot-running-weekly]      '("Plot running weekly totals" . otlb-gps-plot-running-weekly-totals))
     (define-key map [menu-bar otlb-gps plot-per-weekly]          '("Plot per-week totals" . otlb-gps-plot-per-week-totals))
     (define-key map [menu-bar otlb-gps graph-time]               '("Graph by time" . otlb-gps-graph-time))
@@ -374,7 +377,7 @@ command."
                           (otlb-gps-duration-to-string total-time) " | "
                           (otlb-gps-distance-to-string total-distance) " | "
                           (otlb-gps-pace-to-string total-pace)
-                          "  | | | " the-shoes " | Location: |\n"
+                          "  | | | " the-shoes " |   |\n"
                           "  |---+---+---+---+---+---|\n"
                           "  #+TBLEL: otlb-gps-calc\n"
                           "  #+BEGIN_COMMENT\n"
@@ -550,7 +553,8 @@ well as filling in known information."
         (save-excursion
           ;; TODO: change to quiet or make my own message?
           (org-map-entries 'otlb-gps-bubble nil))
-        (setq bubble-count (+ 1 bubble-count))))))
+        (setq bubble-count (+ 1 bubble-count))))
+    (message "Sort done!")))
 
 (defun otlb-gps-bubble ()
   "Helper function to bubble sort the GPS logbook enteries."
@@ -1241,15 +1245,16 @@ start time."
         (org-table-put nil 11 (concat (format "%.2f km" (cadr shoe))))
         (org-table-align)))))
 
+;; (with-current-buffer-create "*imagetest*" (insert-image (create-image (concat (car otlb-gps-locations) "/" (otlb-gps-get-id) ".png"))))
 (defun otlb-gps-open-cached-osm ()
-  "Open the current logbook entry on Google Earth."
+  "Open the current logbook entry using saved OSM map image."
   (interactive)
   ;; get the current ID
   (let* ((id (otlb-gps-get-id))
          ;; TODO: allow on secondary devices too
          (output-file (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".png")) (concat (car otlb-gps-locations) "/" id ".png"))))
-    ;; run script to convert to gpx and open in Google Earth
-    (start-process "geeqie otlb" nil "nohup" "geeqie" "-r" (concat "file:" output-file))))
+    ;; open image with feh
+    (start-process "feh otlb" nil "nohup" "feh-open-browse" output-file)))
 
 ;; TODO: all gps locations automatically
 (defun otlb-gps-open-google-earth ()
@@ -1264,6 +1269,23 @@ start time."
     ;; run script to convert to gpx and open in Google Earth
     (start-process "google earth" nil "nohup" otlb-gps-map-command output-file)))
 
+(defun otlb-gps-map-preview ()
+  "Preview the current logbook entry in an emacs buffer."
+  ;; TODO: potentially open to window size
+  ;; TODO: make in another frame
+  (interactive)
+  ;; TODO: make sure otlb-gps-get-id doesn't get on non-headings
+  (when (eq last-command 'otlb-gps-map-preview)
+    (outline-next-heading))
+  (let ((id (otlb-gps-get-id)))
+    (with-current-buffer-create "*otlb map preview*"
+      (special-mode)
+      (setq buffer-read-only nil)
+      (erase-buffer)
+      (display-buffer (with-current-buffer-create "*otlb map preview*"))
+      (insert-image (create-image (concat (car otlb-gps-locations) "/" id "-1280.png")))
+      (setq buffer-read-only t))))
+
 (defun otlb-gps-graph-distance ()
   "Build a speed/elevation graph with respect to distance."
   (interactive)
@@ -1272,6 +1294,7 @@ start time."
                           (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".tcx")) (concat (car otlb-gps-locations) "/" id ".tcx"))
                           (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".gpx")) (concat (car otlb-gps-locations) "/" id ".gpx")))))
     ;; run script to graph it
+    ;; TODO: want to record output here too
     (start-process "graph" "*graph output*" "nohup" "python" otlb-gps-graph-fit-command output-file "--graph-fit-distance")))
 
 (defun otlb-gps-graph-time ()
@@ -1282,6 +1305,7 @@ start time."
                           (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".tcx")) (concat (car otlb-gps-locations) "/" id ".tcx"))
                           (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".gpx")) (concat (car otlb-gps-locations) "/" id ".gpx")))))
     ;; run script to graph it
+    ;; TODO: want to record output here too
     (start-process "graph" "*graph output*" "nohup" "python" otlb-gps-graph-fit-command output-file "--graph-fit-time")))
 
 (defun otlb-gps-calc (lisp-table)
