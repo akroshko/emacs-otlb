@@ -81,7 +81,7 @@ fetch-garmin-310 () {
     # loop over downloaded files to see if they are already in intermediate directory
     if [[ "$1" == "--process" ]]; then
         local OTLBSOURCE="$(get-otlb-source)"
-        pushd . >> /dev/null
+        pushd . >/dev/null
         cd "$OTLBLOGS"
         for f in $FITDIRECTORY/*; do
             # TODO: delete corrupted files to avoid nonsense
@@ -95,7 +95,7 @@ fetch-garmin-310 () {
         done
         cd "${TCXDIRECTORY}"
         create-osm-maps
-        popd >> /dev/null
+        popd >/dev/null
     fi
 }
 
@@ -213,7 +213,7 @@ fetch-garmin-305 () {
     # Requires the package from
     # https://code.google.com/p/garmintools/.
     return 1
-    pushd . >> /dev/null
+    pushd . >/dev/null
     cd "$OTLBLOGS"
     # this is me, because the command required root
     sudo chown -R "$OWNERGROUP" garmin-305
@@ -226,7 +226,7 @@ fetch-garmin-305 () {
             gmn2tcx "$f" > ${f%.gmn}.tcx
         fi
     done
-    popd >> /dev/null
+    popd >/dev/null
 }
 
 # old code, mytracks is gone, here as a useful reference only.
