@@ -46,11 +46,11 @@ get-otlb-source () {
     # https://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in
     SOURCE="${BASH_SOURCE[0]}"
     while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
-        DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-        SOURCE="$(readlink "$SOURCE")"
+        local DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+        local SOURCE="$(readlink "$SOURCE")"
         [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
     done
-    DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+    local DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
     echo $DIR
 }
 
@@ -135,8 +135,8 @@ get-id-tcx () {
     if [[ -z "$XMLID" ]]; then
         return 1
     fi
-    XMLID=${XMLID//-/}
-    XMLID=${XMLID//:/}
+    local XMLID=${XMLID//-/}
+    local XMLID=${XMLID//:/}
     echo $(python "$OTLBSOURCE"/read_files.py "$XMLID" --utc)
     # rename for import
     # TODO: convert time zone properly, just add 6 hours for now
@@ -148,8 +148,8 @@ get-id-gpx () {
     local OTLBSOURCE="$(get-otlb-source)"
     # get a timestamp from first track
     local XMLID=`xmlstarlet sel -t -v "//*[local-name() = 'metadata']/*[local-name() = 'time']" -n "$1"`
-    XMLID=${XMLID//-/}
-    XMLID=${XMLID//:/}
+    local XMLID=${XMLID//-/}
+    local XMLID=${XMLID//:/}
     echo $(python "$OTLBSOURCE"/read_files.py "$XMLID" --utc)
     # rename for import
 }
@@ -170,7 +170,7 @@ create-osm-maps () {
 }
 
 create-osm-map () {
-    OTLBSOURCE="$(get-otlb-source)"
+    local OTLBSOURCE="$(get-otlb-source)"
     # TODO: create a tmp working directory
     # TODO: needs a lost of work to avoid ~/osm silliness
     # TMPDIR=$(mktemp -d)
@@ -247,11 +247,11 @@ convert-samsung-mytracks () {
         if [[ ${f##*.} == "tcx" ]]; then
             # this only supports a very specific file format
             local XMLIDFILE=$(basename "${f}")
-            XMLIDFILE="${XMLIDFILE// /T}"
-            XMLIDFILE="${XMLIDFILE//:/}"
-            XMLIDFILE="${XMLIDFILE//_/}"
-            XMLIDFILE="${XMLIDFILE//-/}"
-            XMLIDFILE="${XMLIDFILE//./00.}"
+            local XMLIDFILE="${XMLIDFILE// /T}"
+            local XMLIDFILE="${XMLIDFILE//:/}"
+            local XMLIDFILE="${XMLIDFILE//_/}"
+            local XMLIDFILE="${XMLIDFILE//-/}"
+            local XMLIDFILE="${XMLIDFILE//./00.}"
             # TODO: possibly flag and convert if different sizes/hashes?
             if [[ ! -e "${SAMSUNG_DIRECTORY}/${XMLIDFILE}" ]]; then
                 msg "Converting $f to ${SAMSUNG_DIRECTORY}/${XMLIDFILE}!"
