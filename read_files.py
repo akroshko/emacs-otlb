@@ -401,6 +401,7 @@ def haversine_distance(origin, destination):
 
 if __name__ == "__main__":
     # TODO: detect filetype automatically
+    # TODO: could ensure_ascii=False be required?
     if '--fit' in sys.argv:
         print json.dumps(main_fit(sys.argv))
     elif '--graph-fit-distance' in sys.argv:
