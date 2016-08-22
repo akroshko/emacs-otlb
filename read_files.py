@@ -133,7 +133,10 @@ def main_fit(argv):
         session_dict['laps']['timer-time'].append(timer_time)
         distance=lap.get_data("total_distance")
         session_dict['laps']['distance'].append(distance)
-        session_dict['laps']['pace'].append((1000./(distance/timer_time))/60.)
+        if distance == None or timer_time == None:
+            session_dict['laps']['pace'].append(0.)
+        else:
+            session_dict['laps']['pace'].append((1000./(distance/timer_time))/60.)
         session_dict['laps']['maximum-speed'].append(lap.get_data("max_speed")) # opt
         session_dict['laps']['average-heart-rate'].append(lap.get_data("avg_heart_rate")) #opt
         session_dict['laps']['maximum-heart-rate'].append(lap.get_data("max_heart_rate")) #opt

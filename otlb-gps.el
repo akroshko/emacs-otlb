@@ -300,7 +300,10 @@ command."
   (unless id
     ;; have one alternate device for now, but will eventually choose
     (otlb-gps-missing-ids)
-    (setq id (completing-read "Workout ID: " otlb-gps-missing-ids nil nil (car otlb-gps-missing-ids) 'otlb-gps-id-history)))
+    ;; (setq id (completing-read "Workout ID: " otlb-gps-missing-ids nil nil (car otlb-gps-missing-ids) 'otlb-gps-id-history))
+    ;; XXXX: works better with my current ido setup
+    (setq id (completing-read "Workout ID: " otlb-gps-missing-ids nil nil nil 'otlb-gps-id-history))
+    )
   ;; is the id a missing one
   (find-file otlb-gps-pedestrian-location)
   (goto-char (point-min))
@@ -314,7 +317,7 @@ command."
                              (with-temp-buffer
                                (insert (shell-command-to-string (concat otlb-gps-read-fit-command " " device-location "/" id ".fit --fit")))
                                (goto-char (point-min))
-                               (mpp (buffer-substring (point-min) (point-max)))
+                               ;; (mpp (buffer-substring (point-min) (point-max)))
                                (json-read)))
                             ((file-exists-p (concat device-location "/" id ".tcx"))
                              (with-temp-buffer
@@ -326,9 +329,7 @@ command."
                                (insert (shell-command-to-string (concat otlb-gps-read-gpx-command " " device-location "/" id ".gpx --gpx")))
                                (goto-char (point-min))
                                (json-read)))))
-           (test1 (mpp fit-alist))
            (fit-laps (cdr (assoc 'laps fit-alist)))
-           (test2 (mpp fit-laps))
            (lap-distances (cdr (assoc 'distance fit-laps)))
            (lap-times (cdr (assoc 'timer-time fit-laps)))
            (lap-paces (cdr (assoc 'pace fit-laps)))
@@ -339,7 +340,6 @@ command."
                            lap-paces
                            lap-heart-rates
                            lap-maximum-heart-rates))
-           (test (mpp lap-tuple))
            (total-distance (cdr (assoc 'distance fit-alist)))
            (total-time (cdr (assoc 'timer-time fit-alist)))
            (total-pace (cdr (assoc 'pace fit-alist)))
@@ -904,7 +904,10 @@ TAG-STRING tags after :miscellaneous: tag."
 
 (defun otlb-gps-distance-to-string (distance)
   "Get a nice string representation of DISTANCE in kilometers."
-  (format "%.3f km" (/ distance 1000.0)))
+  ;; XXXX: to make any sums work nil distance converts to zero
+  (if distance
+      (format "%.3f km" (/ distance 1000.0))
+    "0.000 km"))
 
 (defun otlb-gps-pace-to-string (pace)
   "Get a nice representation of a running PACE in minutes per
