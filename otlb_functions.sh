@@ -157,6 +157,10 @@ get-id-gpx () {
 create-osm-maps () {
     # meant to run in current directory
     for f in ${PWD}/*; do
+        # yes, avoid existing ones
+        if [[ "${f}" =~ -1280.png ]]; then
+            continue
+        fi
         if [[ ! -e ${f%%.*}.png ]]; then
             echo "Creating map for $f"
             create-osm-map "$f"
