@@ -141,8 +141,7 @@ file in `$OTLBLOGS/garmin-310-$ANTID` that meets this criteria.
 During the insertion process, the footwear can be selected from the
 file `$OTLBLOGS/footwear-current.org`, generally based on a unique ID
 and a coloured tag (on the footwear itself to distinguish identical
-footwear).  Retired footwear can be moved into the `org-mode` table in
-`$OTLBLOGS/footwear-retired.org`, after which it can no longer be
+footwear).  Retired footwear with a retiry date can no longer be
 selected, thus allowing the colour of the tag to be used for new
 footwear.
 

@@ -245,17 +245,15 @@ off of a tool for downloading off of a Garmin 305."
            (add-to-list 'otlb-gps-file-ids
                         (list (file-name-sans-extension f) full-path))))))
 
-(defun otlb-gps-table-id (&optional pos)
-  "Get the GPS ID from the current table."
-  ;; TODO: this is only used in one place and can be replaced
-  (add-to-list 'otlb-gps-log-ids (cdr (assoc "ID" (org-entry-properties)))))
-
 (defun otlb-gps-log-ids ()
   "Get all GPS IDs from the configured logbook."
   (setq otlb-gps-log-ids nil)
   (with-current-file-min otlb-gps-pedestrian-location
     ;; walk all tables in the file
-    (org-map-entries 'otlb-gps-table-id))
+    ;; TODO: next thing to replace, bottleneck
+    (let ((latest-id (otlb-gps-get-latest-id))
+          (last-id (otlb-gps-get-last-id)))
+      (do-otlb-gps-entries latest-id last-id  otlb-gps-log-ids (otlb-gps-get-id-from-heading))))
   (setq otlb-gps-log-ids (sort otlb-gps-log-ids (lambda (i j) (not (string< i j))))))
 
 (defun otlb-gps-missing-ids ()
@@ -302,8 +300,7 @@ command."
     (otlb-gps-missing-ids)
     ;; (setq id (completing-read "Workout ID: " otlb-gps-missing-ids nil nil (car otlb-gps-missing-ids) 'otlb-gps-id-history))
     ;; XXXX: works better with my current ido setup
-    (setq id (completing-read "Workout ID: " otlb-gps-missing-ids nil nil nil 'otlb-gps-id-history))
-    )
+    (setq id (completing-read "Workout ID: " otlb-gps-missing-ids nil nil nil 'otlb-gps-id-history)))
   ;; is the id a missing one
   (find-file otlb-gps-pedestrian-location)
   (goto-char (point-min))
@@ -552,6 +549,7 @@ well as filling in known information."
         (outline-next-heading)
         (save-excursion
           ;; TODO: change to quiet or make my own message?
+          ;; TODO: next thing to replace, bottleneck
           (org-map-entries 'otlb-gps-bubble nil))
         (setq bubble-count (+ 1 bubble-count))))
     (message "Sort done!")))
@@ -1200,6 +1198,7 @@ start time."
           (browse-url-generic weather-string))
       (strip-full (replace-regexp-in-string "C" "°C" weather-string)))))
 
+;; TODO: one of the places that needs testing to make sure I'm counting properly
 (defun otlb-gps-shoe-totals ()
   "Total the amount of mileage on each pair of shoes."
   (let ((latest (otlb-gps-get-latest-id))
@@ -1507,6 +1506,7 @@ sorted."
   "Get GPS ID when directly at the heading.  Meant to be used
 programaticly."
   ;; TODO: get the GPS ID, make sure we do not pass over next heading
+  ;; TODO: this can be made faster
   (save-excursion
     ;; TODO: use bound to find next heading
     (when (search-forward ":id:" nil t)
