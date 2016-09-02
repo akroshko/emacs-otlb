@@ -128,6 +128,8 @@ in appropriate place."
     (define-key map (kbd "s-L s-L") 'otlb-gps-cycle-shift)
     ;; TODO: make sure this increments workouts
     (define-key map (kbd "H-d")     'otlb-gps-map-preview)
+    (define-key map (kbd "s-o o") 'otlb-gps-map-open)
+    (define-key map (kbd "s-o s-o") 'otlb-gps-map-open)
     (define-key map (kbd "s-l m")   'otlb-gps-open-cached-osm)
     (define-key map (kbd "s-l M-m") 'otlb-gps-open-google-earth)
     (define-key map (kbd "s-l n")   'otlb-gps-insert-note)
@@ -1288,6 +1290,12 @@ start time."
       (insert-image (create-image (concat (car otlb-gps-locations) "/" id "-1280.png")))
       (setq buffer-read-only t))))
 
+(defun otlb-gps-map-open ()
+  "Open the map of current logbook entry in feh."
+  (interactive)
+  (let ((id (otlb-gps-get-id)))
+    (start-process "feh map" "*otlb feh maps*" "feh" (concat (car otlb-gps-locations) "/" id "-1280.png"))))
+
 (defun otlb-gps-graph-distance ()
   "Build a speed/elevation graph with respect to distance."
   (interactive)
@@ -1498,9 +1506,10 @@ sorted."
   "Get GPS ID from the current headline."
   ;; goto id entry
   (save-excursion
-    (while (not (ignore-errors (assoc "ID" (org-entry-properties))))
+    (while (not (ignore-errors (assoc "id" (org-entry-properties))))
+      ;; TODO: replace with below, will not stop at end of buffer
       (forward-line))
-    (strip-full-no-properties (cdr (assoc "ID" (org-entry-properties))))))
+    (strip-full-no-properties (cdr (assoc "id" (org-entry-properties))))))
 
 (defun otlb-gps-get-id-from-heading ()
   "Get GPS ID when directly at the heading.  Meant to be used
