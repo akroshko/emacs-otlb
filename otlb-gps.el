@@ -1283,11 +1283,14 @@ start time."
     (outline-next-heading))
   (let ((id (otlb-gps-get-id)))
     (with-current-buffer-create "*otlb map preview*"
+      ;; TODO: do I need this here?
       (special-mode)
       (setq buffer-read-only nil)
       (erase-buffer)
       (display-buffer (with-current-buffer-create "*otlb map preview*"))
       (insert-image (create-image (concat (car otlb-gps-locations) "/" id "-1280.png")))
+      (image-mode)
+      (goto-char (point-min))
       (setq buffer-read-only t))))
 
 (defun otlb-gps-map-open ()
