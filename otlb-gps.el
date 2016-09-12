@@ -295,6 +295,9 @@ command."
 (defun otlb-gps-insert (&optional device id)
   "Insert a gps ID by selecting from missing ones."
   (interactive)
+  ;; sort first
+  (goto-char (point-min))
+  (otlb-gps-sort)
   (otlb-gps-interactive-device device)
   ;; insert newest if not given
   (unless id
@@ -436,6 +439,8 @@ command."
       (org-table-next-field)
       (forward-word)
       (forward-char 2)))
+  (goto-char (point-min))
+  (otlb-gps-sort)
   (flush-lines "^\\s-*$"))
 
 (defun otlb-gps-insert-unrecorded (&optional id)
@@ -755,6 +760,12 @@ TODO: create buffer for looking at raw data?
     (unless (eq selected 'cancel)
       (if (org-at-table-p)
           (progn
+            (org-back-to-heading)
+            ;; TODO: repetitive
+            (cic:org-find-table)
+            (setq table-length (length (cic:org-table-to-lisp-no-separators)))
+            (org-table-put table-length 6 selected)
+            (cic:org-find-table 2)
             (setq table-length (length (cic:org-table-to-lisp-no-separators)))
             (org-table-put table-length 6 selected))
         (insert selected-string)))))
@@ -766,13 +777,14 @@ footwear."
     ;; advance to table
     (cic:org-find-table)
     (let* ((table-lisp (cic:org-table-to-lisp-no-separators))
-           (pairs (mapcar (lambda (e)
-                            (list (elt e 7)
-                                  (elt e 8)
-                                  (elt e 0)
-                                  (elt e 1)
-                                  (elt e 3)))
-                          (cdr table-lisp))))
+           (pairs (delq nil (mapcar (lambda (e)
+                                      (when (string= (cic:strip-full (elt e 9)) "")
+                                        (list (elt e 7)
+                                              (elt e 8)
+                                              (elt e 0)
+                                              (elt e 1)
+                                              (elt e 3))))
+                                    (cdr table-lisp)))))
       ;; select the results
       (cic:select-list-item (mapcar (lambda (e) (mapconcat 'identity e " "))
                                     pairs)))))
