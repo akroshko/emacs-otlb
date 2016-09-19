@@ -774,6 +774,7 @@ TODO: create buffer for looking at raw data?
   "Interactively select the shoes worn based on current
 footwear."
   (with-current-file otlb-gps-footwear-current
+    (goto-char (point-min))
     ;; advance to table
     (cic:org-find-table)
     (let* ((table-lisp (cic:org-table-to-lisp-no-separators))
