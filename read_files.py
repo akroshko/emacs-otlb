@@ -184,19 +184,21 @@ def main_graph_fitdistance(argv):
     # gnuplot> set multiplot layout 2,1 rowsfirst
     # multiplot> plot "test.txt" using 1:2 with lines
     # multiplot> plot "test.txt" using 1:3 with lines
-
-    distance_points = [(p['distance'],mps_minpkm(p['speed']),p['altitude']) for p in session_dict['laps']['trackpoints']]
+    distance_points = [(p['distance'],mps_minpkm(p['speed']),p['altitude'],p['heart rate']) for p in session_dict['laps']['trackpoints']]
     # create tempfile
     fd,fname = tempfile.mkstemp()
     fh = os.fdopen(fd,'w')
     # print '# plot "data.txt" using 1:2 with lines '
     for p in distance_points:
         if p[0] is None or p[1] is None or p[2] is None:
-            fh.write("%s %s %s\n" % ('nan','nan','nan'))
+            fh.write("%s %s %s %s\n" % ('nan','nan','nan','nan'))
         else:
-            fh.write("%f %f %f\n" % p)
+            if p[3] is None:
+                fh.write("%f %f %f 'nan'\n" % p[0:3])
+            else:
+                fh.write("%f %f %f %f\n" % p)
     fh.close()
-    gnuplotstring=("set multiplot layout 2,1 rowsfirst title '" + filename + "'\n" +
+    gnuplotstring=("set multiplot layout 3,1 rowsfirst title '" + filename + "'\n" +
                    "set grid ytics mytics lc rgb \"#bbbbbb\" lt 1, lc rgb \"#bbbbbb\" lt 0\n" +
                    "unset key\n" +
                    "set title 'distance (m) vs speed (min/km)'\n" +
@@ -212,7 +214,15 @@ def main_graph_fitdistance(argv):
                    "set mytics 5\n" +
                    "set grid mytics\n" +
                    "set grid ytics\n" +
-                   "plot \"%s\" using 1:3 with lines\n" % fname)
+                   "plot \"%s\" using 1:3 with lines\n" % fname +
+                   "set title 'distance (m) vs HR'\n" +
+                   "set yrange [*:*]\n" +
+                   "set ytics 20\n" +
+                   "set ytics 50\n" +
+                   "set mytics 5\n" +
+                   "set grid mytics\n" +
+                   "set grid ytics\n" +
+                   "plot \"%s\" using 1:4 with lines\n" % fname)
     plot = subprocess.Popen(['gnuplot','-persist'], stdin=subprocess.PIPE)
     plot.communicate(gnuplotstring)
 
@@ -224,18 +234,21 @@ def main_graph_fittime(argv):
     # gnuplot> set multiplot layout 2,1 rowsfirst
     # multiplot> plot "test.txt" using 1:2 with lines
     # multiplot> plot "test.txt" using 1:3 with lines
-    distance_points = [(p['elapsed-time'],mps_minpkm(p['speed']),p['altitude']) for p in session_dict['laps']['trackpoints']]
+    time_points = [(p['elapsed-time'],mps_minpkm(p['speed']),p['altitude'],p['heart rate']) for p in session_dict['laps']['trackpoints']]
     # create tempfile
     fd,fname = tempfile.mkstemp()
     fh = os.fdopen(fd,'w')
     # print '# plot "data.txt" using 1:2 with lines '
-    for p in distance_points:
+    for p in time_points:
         if p[0] is None or p[1] is None or p[2] is None:
-            fh.write("%s %s %s\n" % ('nan','nan','nan'))
+            fh.write("%s %s %s %s\n" % ('nan','nan','nan','nan'))
         else:
-            fh.write("%f %f %f\n" % p)
+            if p[3] is None:
+                fh.write("%f %f %f 'nan'\n" % p[0:3])
+            else:
+                fh.write("%f %f %f %f\n" % p)
     fh.close()
-    gnuplotstring=("set multiplot layout 2,1 rowsfirst title '" + filename + "'\n" +
+    gnuplotstring=("set multiplot layout 3,1 rowsfirst title '" + filename + "'\n" +
                    "set grid ytics mytics lc rgb \"#bbbbbb\" lt 1, lc rgb \"#bbbbbb\" lt 0\n" +
                    "unset key\n" +
                    "set title 'time (s) vs speed (min/km)'\n" +
@@ -250,7 +263,14 @@ def main_graph_fittime(argv):
                    "set mytics 5\n" +
                    "set grid mytics\n" +
                    "set grid ytics\n" +
-                   "plot \"%s\" using 1:3 with lines\n" % fname)
+                   "plot \"%s\" using 1:3 with lines\n" % fname +
+                   "set title 'time (s) vs HR '\n" +
+                   "set yrange [*:*]\n" +
+                   "set ytics 50\n" +
+                   "set mytics 5\n" +
+                   "set grid mytics\n" +
+                   "set grid ytics\n" +
+                   "plot \"%s\" using 1:4 with lines\n" % fname)
     plot = subprocess.Popen(['gnuplot','-persist'], stdin=subprocess.PIPE)
     plot.communicate(gnuplotstring)
 
