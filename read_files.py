@@ -124,6 +124,10 @@ def main_fit(argv):
     session_dict['laps']['maximum-heart-rate']=[]
     session_dict['laps']['trigger-method']=[]
     session_dict['laps']['trackpoints']=[]
+    session_dict['lap start times']=[]
+    session_dict['lap end times']=[]
+    session_dict['lap start distances']=[]
+    session_dict['lap end distances']=[]
     for lap in activity.get_records_by_type('lap'):
         session_dict['laps']['start-time'].append(str(local_date_to_utc(lap.get_data("start_time"))))
         start_time=lap.get_data("start_time")
@@ -141,9 +145,14 @@ def main_fit(argv):
         session_dict['laps']['average-heart-rate'].append(lap.get_data("avg_heart_rate")) #opt
         session_dict['laps']['maximum-heart-rate'].append(lap.get_data("max_heart_rate")) #opt
         session_dict['laps']['trigger-method'].append(LAP_TRIGGER_MAP.get(lap.get_data("lap_trigger"), "Manual"))
+        first_track_point=True
         for trackpoint in activity.get_records_by_type('record'):
             tts = trackpoint.get_data("timestamp")
             if tts >= start_time and tts <= end_time:
+                if first_track_point==True:
+                    session_dict['lap start times'].append((trackpoint.get_data("timestamp")-real_start_time).seconds)
+                    session_dict['lap start distances'].append(trackpoint.get_data("distance"))
+                    first_track_point=False
                 session_dict['laps']['trackpoints'].append({})
                 session_dict['laps']['trackpoints'][-1]['timestamp']=str(local_date_to_utc(trackpoint.get_data("timestamp")))
                 session_dict['laps']['trackpoints'][-1]['elapsed-time']=(trackpoint.get_data("timestamp")-real_start_time).seconds
@@ -162,6 +171,9 @@ def main_fit(argv):
                     session_dict['laps']['trackpoints'][-1]['longitude']=None
                 else:
                     session_dict['laps']['trackpoints'][-1]['longitude']=str(semicircle_to_degrees(session_dict['laps']['trackpoints'][-1]['longitude-position']))
+        # add first and last
+        session_dict['lap end times'].append(session_dict['laps']['trackpoints'][-1]['elapsed-time'])
+        session_dict['lap end times'].append(session_dict['laps']['trackpoints'][-1]['distance'])
     # update things from laps
     session_dict['start-latitude']=session_dict['laps']['trackpoints'][0]['latitude']
     session_dict['start-longitude']=session_dict['laps']['trackpoints'][0]['longitude']
@@ -188,6 +200,8 @@ def main_graph_fitdistance(argv):
     # create tempfile
     fd,fname = tempfile.mkstemp()
     fh = os.fdopen(fd,'w')
+    print session_dict['lap start distances']
+    print session_dict['lap end distances']
     # print '# plot "data.txt" using 1:2 with lines '
     for p in distance_points:
         if p[0] is None or p[1] is None or p[2] is None:
@@ -198,30 +212,50 @@ def main_graph_fitdistance(argv):
             else:
                 fh.write("%f %f %f %f\n" % p)
     fh.close()
+    print session_dict['lap start distances']
+    print session_dict['lap end distances']
+    lapdistances=''
+    for z in session_dict['lap start distances']:
+        lapdistances+=('set arrow from %f,graph(0,0) to %f,graph(1,1) nohead lw 0.1 lc rgb "blue"\n' % (z,z))
     gnuplotstring=("set multiplot layout 3,1 rowsfirst title '" + filename + "'\n" +
                    "set grid ytics mytics lc rgb \"#bbbbbb\" lt 1, lc rgb \"#bbbbbb\" lt 0\n" +
                    "unset key\n" +
                    "set title 'distance (m) vs speed (min/km)'\n" +
                    # TODO: want option for wider variety of speeds
+                   "set xtics 0.,1000.\n" +
+                   "set mxtics 10\n" +
                    "set yrange [2.5:8]\n" +
                    "set ytics 1.0\n" +
                    "set mytics 6\n" +
+                   "set grid xtics\n" +
+                   "set grid mxtics\n" +
+                   "set grid ytics\n" +
+                   "set grid mytics\n" +
+                   lapdistances +
                    "plot \"%s\" using 1:2 with lines\n" % fname +
                    "set title 'distance (m) vs altitude (m)'\n" +
+                   "set xtics 0.,1000.\n" +
+                   "set mxtics 10\n" +
                    "set yrange [*:*]\n" +
-                   "set ytics 20\n" +
                    "set ytics 50\n" +
                    "set mytics 5\n" +
-                   "set grid mytics\n" +
+                   "set grid xtics\n" +
+                   "set grid mxtics\n" +
                    "set grid ytics\n" +
+                   "set grid mytics\n" +
+                   lapdistances +
                    "plot \"%s\" using 1:3 with lines\n" % fname +
                    "set title 'distance (m) vs HR'\n" +
+                   "set xtics 0.,1000.\n" +
+                   "set mxtics 10\n" +
                    "set yrange [*:*]\n" +
                    "set ytics 20\n" +
-                   "set ytics 50\n" +
                    "set mytics 5\n" +
-                   "set grid mytics\n" +
+                   "set grid xtics\n" +
+                   "set grid mxtics\n" +
                    "set grid ytics\n" +
+                   "set grid mytics\n" +
+                   lapdistances +
                    "plot \"%s\" using 1:4 with lines\n" % fname)
     plot = subprocess.Popen(['gnuplot','-persist'], stdin=subprocess.PIPE)
     plot.communicate(gnuplotstring)
@@ -248,28 +282,50 @@ def main_graph_fittime(argv):
             else:
                 fh.write("%f %f %f %f\n" % p)
     fh.close()
+    print session_dict['lap start times']
+    print session_dict['lap end times']
+    laptimes = ''
+    for z in session_dict['lap start times']:
+        laptimes+=('set arrow from %f,graph(0,0) to %f,graph(1,1) nohead lw 0.1 lc rgb "blue"\n' % (z,z))
     gnuplotstring=("set multiplot layout 3,1 rowsfirst title '" + filename + "'\n" +
                    "set grid ytics mytics lc rgb \"#bbbbbb\" lt 1, lc rgb \"#bbbbbb\" lt 0\n" +
                    "unset key\n" +
                    "set title 'time (s) vs speed (min/km)'\n" +
                    # TODO: want option for wider variety of speeds
+                   "set xtics 0.,600.\n" +
+                   "set mxtics 10\n" +
                    "set yrange [2.5:8]\n" +
                    "set ytics 1.0\n" +
                    "set mytics 6\n" +
+                   "set grid xtics\n" +
+                   "set grid mxtics\n" +
+                   "set grid ytics\n" +
+                   "set grid mytics\n" +
+                   laptimes +
                    "plot \"%s\" using 1:2 with lines\n" % fname +
                    "set title 'time (s) vs altitude (m)'\n" +
+                   "set xtics 0.,600.\n" +
+                   "set mxtics 10\n" +
                    "set yrange [*:*]\n" +
                    "set ytics 50\n" +
                    "set mytics 5\n" +
-                   "set grid mytics\n" +
+                   "set grid xtics\n" +
+                   "set grid mxtics\n" +
                    "set grid ytics\n" +
+                   "set grid mytics\n" +
+                   laptimes +
                    "plot \"%s\" using 1:3 with lines\n" % fname +
                    "set title 'time (s) vs HR '\n" +
+                   "set xtics 0.,600.\n" +
+                   "set mxtics 10\n" +
                    "set yrange [*:*]\n" +
-                   "set ytics 50\n" +
+                   "set ytics 20\n" +
                    "set mytics 5\n" +
-                   "set grid mytics\n" +
+                   "set grid xtics\n" +
+                   "set grid mxtics\n" +
                    "set grid ytics\n" +
+                   "set grid mytics\n" +
+                   laptimes +
                    "plot \"%s\" using 1:4 with lines\n" % fname)
     plot = subprocess.Popen(['gnuplot','-persist'], stdin=subprocess.PIPE)
     plot.communicate(gnuplotstring)
