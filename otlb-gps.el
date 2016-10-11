@@ -104,7 +104,7 @@ in appropriate place."
     (otlb-gps-refresh-primary)))
 
 ;; only global key required!
-(global-set-key (kbd "s-j l") 'otlb-gps-find-pedestrian-location)
+(global-set-key (kbd "s-j p") 'otlb-gps-find-pedestrian-location)
 
 (defvar otlb-gps-mode-map
   nil
@@ -793,21 +793,26 @@ footwear."
       (cic:select-list-item (mapcar (lambda (e) (mapconcat 'identity e " "))
                                     pairs)))))
 
-
 (defun otlb-gps-insert-miscellaneous-ask ()
   (interactive)
   (let ((selected (cic:select-list-item (list "strength" "stretch" "strength/stretch"))))
     (cond ((equal selected "strength")
-           (otlb-gps-insert-miscellaneous nil "strength:"))
+           (if (boundp 'otlb-gps-strength-template)
+               (otlb-gps-insert-miscellaneous nil "strength:" otlb-gps-strength-template)
+             (otlb-gps-insert-miscellaneous nil "strength:")))
           ((equal selected "stretch")
            (otlb-gps-insert-miscellaneous nil "stretch:"))
           ((equal selected "strength/stretch")
            (otlb-gps-insert-miscellaneous nil "strength:stretch:")))))
 
-(defun otlb-gps-insert-miscellaneous (&optional id tag-string)
+;; TODO: add default template
+;; TODO: toggle tag string
+(defun otlb-gps-insert-miscellaneous (&optional id tag-string template)
   "Insert a miscellaneous entry with ID or select if nil.  Add
 TAG-STRING tags after :miscellaneous: tag."
   (interactive)
+  (unless template
+    (setq template "  |   |   |   |   |   |\n"))
   (goto-char (point-min))
   (let* ((the-start-time (org-read-date nil 'totime nil "Start time: "))
          (the-start-id (otlb-gps-encoded-time-to-id the-start-time))
@@ -815,7 +820,7 @@ TAG-STRING tags after :miscellaneous: tag."
                  "  |---+---+---+---+---|\n"
                  "  | Activity  | Number | Intensity | Rest      | Notes        |\n"
                  "  |---+---+---+---+---+\n"
-                 "  |   |   |   |   |   |\n"
+                 template
                  "  |---+---+---+---+---+\n"
                  "  #+BEGIN_COMMENT\n"
                  "  #+END_COMMENT")))
