@@ -88,7 +88,7 @@ fetch-garmin-310 () {
             # local GPSNAME=$(basename -s .fit "$f")
             # TODO: python should give list of fit-ids instead
             local XMLID=$(python "$OTLBSOURCE"/read_files.py "$f" --fit-id)
-            if [[ ! -e "${TCXDIRECTORY}/${XMLID}.tcx" ]] && [[ ! -e "${TCXDIRECTORY}/${XMLID}.fit" ]]; then
+            if [[ ! -e "${TCXDIRECTORY}/${XMLID}.tcx" && ! -e "${TCXDIRECTORY}/${XMLID}.fit" ]]; then
                 echo "Missing $XMLID! Copying!"
                 cp "$f" "${TCXDIRECTORY}/${XMLID}.fit"
             fi
