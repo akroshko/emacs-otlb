@@ -55,48 +55,50 @@ get-otlb-source () {
 }
 
 fetch-garmin-310 () {
-    # Fetch data from a GARMIN-310, could be easily modified to fetch
-    # data from other devices compatible with the 'antfs-cli' package.
-    # set up the specific directories based on the confiuration
-    local INTERMEDIATEDIRECTORY="$OTLBLOGS"/"$DEVICENAME"-intermediate
-    local FITDIRECTORY="$ANTCONFIG"/activities
-    # TODO: outdated name
-    local TCXDIRECTORY="$OTLBLOGS"/"$DEVICENAME"
-    # there's probably a better way of dealing with arguments
-    if [[ -z "$1" ]]; then
-        echo "$USAGE"
-        return 0;
-    fi
-    # XXXX this is good to do if antfs-cli is hanging, can probably be
-    # deleted at some point
-    if [[ "$1" == "--reset" ]]; then
-        rm "$ANTCONFIG"/authfile
-        return 0
-    fi
-    if [[ "$1" == "--download" ]]; then
-        # currently used with my Garmin 310
-        antfs-cli
-        return 0
-    fi
-    # loop over downloaded files to see if they are already in intermediate directory
-    if [[ "$1" == "--process" ]]; then
-        local OTLBSOURCE="$(get-otlb-source)"
-        pushd . >/dev/null
-        cd "$OTLBLOGS"
-        for f in $FITDIRECTORY/*; do
-            # TODO: delete corrupted files to avoid nonsense
-            # local GPSNAME=$(basename -s .fit "$f")
-            # TODO: python should give list of fit-ids instead
-            local XMLID=$(python "$OTLBSOURCE"/read_files.py "$f" --fit-id)
-            if [[ ! -e "${TCXDIRECTORY}/${XMLID}.tcx" && ! -e "${TCXDIRECTORY}/${XMLID}.fit" ]]; then
-                echo "Missing $XMLID! Copying!"
-                cp "$f" "${TCXDIRECTORY}/${XMLID}.fit"
-            fi
-        done
-        cd "${TCXDIRECTORY}"
-        create-osm-maps
-        popd >/dev/null
-    fi
+    time {
+        # Fetch data from a GARMIN-310, could be easily modified to fetch
+        # data from other devices compatible with the 'antfs-cli' package.
+        # set up the specific directories based on the confiuration
+        local INTERMEDIATEDIRECTORY="$OTLBLOGS"/"$DEVICENAME"-intermediate
+        local FITDIRECTORY="$ANTCONFIG"/activities
+        # TODO: outdated name
+        local TCXDIRECTORY="$OTLBLOGS"/"$DEVICENAME"
+        # there's probably a better way of dealing with arguments
+        if [[ -z "$1" ]]; then
+            echo "$USAGE"
+            return 0;
+        fi
+        # XXXX this is good to do if antfs-cli is hanging, can probably be
+        # deleted at some point
+        if [[ "$1" == "--reset" ]]; then
+            rm "$ANTCONFIG"/authfile
+            return 0
+        fi
+        if [[ "$1" == "--download" ]]; then
+            # currently used with my Garmin 310
+            antfs-cli
+            return 0
+        fi
+        # loop over downloaded files to see if they are already in intermediate directory
+        if [[ "$1" == "--process" ]]; then
+            local OTLBSOURCE="$(get-otlb-source)"
+            pushd . >/dev/null
+            cd "$OTLBLOGS"
+            for f in $FITDIRECTORY/*; do
+                # TODO: delete corrupted files to avoid nonsense
+                # local GPSNAME=$(basename -s .fit "$f")
+                # TODO: python should give list of fit-ids instead
+                local XMLID=$(python "$OTLBSOURCE"/read_files.py "$f" --fit-id)
+                if [[ ! -e "${TCXDIRECTORY}/${XMLID}.tcx" && ! -e "${TCXDIRECTORY}/${XMLID}.fit" ]]; then
+                    echo "Missing $XMLID! Copying!"
+                    cp "$f" "${TCXDIRECTORY}/${XMLID}.fit"
+                fi
+            done
+            cd "${TCXDIRECTORY}"
+            create-osm-maps
+            popd >/dev/null
+        fi
+    }
 }
 
 convert-aux-devices () {

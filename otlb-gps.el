@@ -444,7 +444,11 @@ command."
       (forward-char 2)))
   (goto-char (point-min))
   (otlb-gps-sort)
-  (flush-lines "^\\s-*$"))
+  (flush-lines "^\\s-*$")
+  ;; TODO: better function for finding newly inserted id
+  (search-forward (concat ":id: " id))
+  (org-back-to-heading)
+  )
 
 (defun otlb-gps-insert-unrecorded (&optional id)
   "Insert an unrecorded track.  Select start and end locations as
@@ -547,22 +551,23 @@ well as filling in known information."
 (defun otlb-gps-sort ()
   "Sort the GPS logbook enteries."
   (interactive)
-  (let ((bubble-count 0))
-    ;; use bubble sort!
-    (setq otlb-gps-sort-done-this-step t)
-    (save-excursion
-      (while otlb-gps-sort-done-this-step
-        (message (concat "Bubble: " (number-to-string bubble-count)))
-        (setq otlb-gps-sort-done-this-step nil)
-        ;; goto first heading
-        (goto-char (point-min))
-        (outline-next-heading)
-        (save-excursion
-          ;; TODO: change to quiet or make my own message?
-          ;; TODO: next thing to replace, bottleneck
-          (org-map-entries 'otlb-gps-bubble nil))
-        (setq bubble-count (+ 1 bubble-count))))
-    (message "Sort done!")))
+  (save-excursion
+    (let ((bubble-count 0))
+      ;; use bubble sort!
+      (setq otlb-gps-sort-done-this-step t)
+      (save-excursion
+        (while otlb-gps-sort-done-this-step
+          (message (concat "Bubble: " (number-to-string bubble-count)))
+          (setq otlb-gps-sort-done-this-step nil)
+          ;; goto first heading
+          (goto-char (point-min))
+          (outline-next-heading)
+          (save-excursion
+            ;; TODO: change to quiet or make my own message?
+            ;; TODO: next thing to replace, bottleneck
+            (org-map-entries 'otlb-gps-bubble nil))
+          (setq bubble-count (+ 1 bubble-count))))
+      (message "Sort done!"))))
 
 (defun otlb-gps-bubble ()
   "Helper function to bubble sort the GPS logbook enteries."
@@ -1530,10 +1535,10 @@ sorted."
   "Get GPS ID from the current headline."
   ;; goto id entry
   (save-excursion
-    (while (not (ignore-errors (assoc "id" (org-entry-properties))))
+    (while (not (ignore-errors (assoc "ID" (org-entry-properties))))
       ;; TODO: replace with below, will not stop at end of buffer
       (forward-line))
-    (strip-full-no-properties (cdr (assoc "id" (org-entry-properties))))))
+    (strip-full-no-properties (cdr (assoc "ID" (org-entry-properties))))))
 
 (defun otlb-gps-get-id-from-heading ()
   "Get GPS ID when directly at the heading.  Meant to be used
