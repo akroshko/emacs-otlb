@@ -935,7 +935,7 @@ TAG-STRING tags after :miscellaneous: tag."
       (format "%.3f km" (/ distance 1000.0))
     "0.000 km"))
 
-(defun otlb-gps-pace-to-string (pace)
+(defun otlb-gps-pace-to-string (pace &optional abbreviate)
   "Get a nice representation of a running PACE in minutes per
 kilometer."
   (if (or (equal pace (string-to-float "1.0e+INF"))
@@ -944,8 +944,12 @@ kilometer."
       ""
     (let* ((minutes (floor pace))
            (seconds (* 60 (- pace minutes))))
-      (format "%d:%02.0f min/km" minutes seconds))
-    ))
+      (when (> seconds 59.5)
+        (setq seconds 0)
+        (setq minutes (+ minutes 1)))
+      (if abbreviate
+          (format "%d:%02.0f min/k" minutes seconds)
+        (format "%d:%02.0f min/km" minutes seconds)))))
 
 (defun otlb-gps-string-to-duration (str)
   "Convert the standard time string STR into a duration in
