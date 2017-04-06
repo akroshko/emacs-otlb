@@ -104,7 +104,12 @@ def main_fit(argv):
     session_dict['timer-time']=timer_time
     distance=session.get_data("total_distance")
     session_dict['distance']=distance
-    session_dict['pace']=(1000./(distance/timer_time))/60.
+    # TODO: possibility do this for very small distances
+    if distance == 0.0:
+        # TODO: change to None?
+        session_dict['pace']=0.0
+    else:
+        session_dict['pace']=(1000./(distance/timer_time))/60.
     theid=("%04d" % start_time.year)+("%02d" % start_time.month)+("%02d" % start_time.day)+'T'+("%02d" % start_time.hour)+("%02d" % start_time.minute)+("%02d" % start_time.second)
     session_dict['id']=theid
     session_dict['start-time']=theid
@@ -137,7 +142,8 @@ def main_fit(argv):
         session_dict['laps']['timer-time'].append(timer_time)
         distance=lap.get_data("total_distance")
         session_dict['laps']['distance'].append(distance)
-        if distance == None or timer_time == None:
+        if distance == 0.0 or distance == None or timer_time == None:
+            # TODO: change to None?
             session_dict['laps']['pace'].append(0.)
         else:
             session_dict['laps']['pace'].append((1000./(distance/timer_time))/60.)
