@@ -141,7 +141,8 @@ in appropriate place."
     ;; (define-key map (kbd "s-p p")   'otlb-gps-plot-per-week-totals)
     (define-key map (kbd "s-p p")   'otlb-gps-cycle)
     (define-key map (kbd "s-p s-p") 'otlb-gps-cycle)
-    (define-key map (kbd "s-p q")   'otlb-gps-toggle-quality)
+    ;; used to be s-p q, but trying this out...
+    (define-key map (kbd "H-r")     'otlb-gps-toggle-quality)
     (define-key map (kbd "s-p s")   'otlb-gps-sort)
     (define-key map (kbd "s-p t")   'otlb-gps-toggle)
     (define-key map (kbd "s-p u")   'otlb-gps-insert-unrecorded)
@@ -355,10 +356,11 @@ command."
            (start-time (cdr (assoc 'start-time fit-alist)))
            (end-time (cdr (assoc 'end-time fit-alist)))
            ;; (time-zone (cdr (assoc 'time-zone fit-alist)))
-           ;; TODO: fix this
+           ;; TODO: fix this, determine time zone from coords and/or get from watch?
            (time-zone -6.0 ;; (cadr (assoc 'time-zone read-alist))
                       )
-           (the-shoes (let ((shoes (otlb-gps-select-shoes)))
+           (header-message (concat id "\nDay: " (otlb-gps-id-to-full-date id) "\nDistance: " (number-to-string total-distance) "m\nTime: " (number-to-string total-time) "s\nPace: " (number-to-string total-pace) " min/km\n# of laps: " (number-to-string (length lap-times)) "\n"))
+           (the-shoes (let ((shoes (otlb-gps-select-shoes header-message)))
                         (if (eq shoes 'cancel)
                             ""
                           shoes)))
@@ -778,7 +780,7 @@ TODO: create buffer for looking at raw data?
             (org-table-put table-length 6 selected))
         (insert selected-string)))))
 
-(defun otlb-gps-select-shoes ()
+(defun otlb-gps-select-shoes (&optional header-message)
   "Interactively select the shoes worn based on current
 footwear."
   (with-current-file otlb-gps-footwear-current
@@ -796,7 +798,9 @@ footwear."
                                     (cdr table-lisp)))))
       ;; select the results
       (cic:select-list-item (mapcar (lambda (e) (mapconcat 'identity e " "))
-                                    pairs)))))
+                                    pairs)
+                            nil
+                            header-message))))
 
 (defun otlb-gps-insert-miscellaneous-ask ()
   (interactive)
