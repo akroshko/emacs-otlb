@@ -77,13 +77,17 @@ fetch-garmin-310 () {
         if [[ "$1" == "--download" ]]; then
             # currently used with my Garmin 310
             antfs-cli
-            return 0
+            local DOWNLOAD_SUCCESSFUL=$?
         fi
         # loop over downloaded files to see if they are already in intermediate directory
-        if [[ "$1" == "--process" ]]; then
+        if [[ "$1" == "--process" || -n $DOWNLOAD_SUCCESSFUL ]]; then
+            if [[ -n $DOWNLOAD_SUCCESSFUL ]]; then
+                echo "Download successful!!!"
+            fi
             local OTLBSOURCE="$(get-otlb-source)"
             pushd . >/dev/null
             cd "$OTLBLOGS"
+            echo "Scanning .fit directory"
             for f in $FITDIRECTORY/*; do
                 # TODO: delete corrupted files to avoid nonsense
                 # local GPSNAME=$(basename -s .fit "$f")
@@ -94,6 +98,7 @@ fetch-garmin-310 () {
                     cp "$f" "${TCXDIRECTORY}/${XMLID}.fit"
                 fi
             done
+            echo "Creating osm maps"
             cd "${TCXDIRECTORY}"
             create-osm-maps
             popd >/dev/null
