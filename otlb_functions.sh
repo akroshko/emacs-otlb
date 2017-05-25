@@ -79,7 +79,7 @@ fetch-garmin-310 () {
             antfs-cli
             local DOWNLOAD_SUCCESSFUL=$?
         fi
-        # loop over downloaded files to see if they are already in intermediate directory
+        # check if downloaded files are already in intermediate directory
         if [[ "$1" == "--process" || -n $DOWNLOAD_SUCCESSFUL ]]; then
             if [[ -n $DOWNLOAD_SUCCESSFUL ]]; then
                 echo "Download successful!!!"
@@ -88,16 +88,20 @@ fetch-garmin-310 () {
             pushd . >/dev/null
             cd "$OTLBLOGS"
             echo "Scanning .fit directory"
-            for f in $FITDIRECTORY/*; do
-                # TODO: delete corrupted files to avoid nonsense
-                # local GPSNAME=$(basename -s .fit "$f")
-                # TODO: python should give list of fit-ids instead
-                local XMLID=$(python "$OTLBSOURCE"/read_files.py "$f" --fit-id)
-                if [[ ! -e "${TCXDIRECTORY}/${XMLID}.tcx" && ! -e "${TCXDIRECTORY}/${XMLID}.fit" ]]; then
-                    echo "Missing $XMLID! Copying!"
-                    cp "$f" "${TCXDIRECTORY}/${XMLID}.fit"
-                fi
-            done
+            THEIDS=$(python "$OTLBSOURCE"/read_files.py "$FITDIRECTORY" --fit-id)
+            (IFS=$'\n'
+             for THEID in $THEIDS; do
+                 local XMLFILE=$(echo "$THEID" | cut -d' ' -f1)
+                 local XMLID=$(echo "$THEID"   | cut -d' ' -f2)
+                 if [[ ! -e "${TCXDIRECTORY}/${XMLID}.tcx" && ! -e "${TCXDIRECTORY}/${XMLID}.fit" ]]; then
+                     echo "Missing $XMLID! Copying!"
+                     if [[ ! -e "${XMLFILE}" ]]; then
+                         echo "Cannot copy ${XMLFILE}! Not found!"
+                     else
+                         cp "${XMLFILE}" "${TCXDIRECTORY}/${XMLID}.fit"
+                     fi
+                 fi
+             done)
             echo "Creating osm maps"
             cd "${TCXDIRECTORY}"
             create-osm-maps

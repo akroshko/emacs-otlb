@@ -376,13 +376,21 @@ def main_tcx(argv):
    return tcx_dict
 
 def main_fit_id(argv):
-    filename=sys.argv[1]
-    activity = Activity(filename)
-    activity.parse()
-    session = next(activity.get_records_by_type('session'))
-    start_time=session.get_data("start_time")
-    theid=("%04d" % start_time.year)+("%02d" % start_time.month)+("%02d" % start_time.day)+'T'+("%02d" % start_time.hour)+("%02d" % start_time.minute)+("%02d" % start_time.second)
-    print theid
+    theids=[]
+    if os.path.isdir(argv[1]):
+        fit_files=[os.path.join(argv[1],f) for f in os.listdir(sys.argv[1]) if f.endswith('.fit')]
+    else:
+        fit_files=[argv[1]]
+    for filename in fit_files:
+        activity = Activity(filename)
+        # TODO: this is the really time consuming one
+        activity.parse()
+        session = next(activity.get_records_by_type('session'))
+        start_time=session.get_data("start_time")
+        theid=("%04d" % start_time.year)+("%02d" % start_time.month)+("%02d" % start_time.day)+'T'+("%02d" % start_time.hour)+("%02d" % start_time.minute)+("%02d" % start_time.second)
+        theids.append((filename,theid))
+    for theid in theids:
+        print theid[0] + ' ' + theid[1]
 
 def main_gpx(argv):
     gpx_dict={}
