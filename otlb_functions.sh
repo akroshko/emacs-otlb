@@ -80,8 +80,8 @@ fetch-garmin-310 () {
             local DOWNLOAD_SUCCESSFUL=$?
         fi
         # check if downloaded files are already in intermediate directory
-        if [[ "$1" == "--process" || -n $DOWNLOAD_SUCCESSFUL ]]; then
-            if [[ -n $DOWNLOAD_SUCCESSFUL ]]; then
+        if [[ "$1" == "--process" || "$DOWNLOAD_SUCCESSFUL" == 0 ]]; then
+            if [[ "$DOWNLOAD_SUCCESSFUL" == 0 ]]; then
                 echo "Download successful!!!"
             fi
             local OTLBSOURCE="$(get-otlb-source)"
@@ -192,7 +192,7 @@ create-osm-map () {
     # get the id
     if [[ ${1##*.} == "fit" ]]; then
         # TODO: not working yet
-        local THEID="$(get-id-fit $1)"
+        local THEID="$(get-id-fit $1 | cut -d' ' -f2)"
     elif [[ ${1##*.} == "gpx" ]]; then
         local THEID="$(get-id-gpx $1)"
     else
