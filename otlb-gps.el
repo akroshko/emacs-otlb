@@ -1355,18 +1355,18 @@ start time."
     ;; TODO: want to record output here too
     (start-process "graph" "*graph output*" "nohup" "python" otlb-gps-graph-fit-command output-file "--graph-fit-time")))
 
-(defun otlb-gps-calc (lisp-table)
-  "Calculated an updated lisp table from the LISP-TABLE
+(defun otlb-gps-calc ( lisp-table lisp-table-no-seperators)
+  "Calculated an updated lisp table from the LISP-TABLE-NO-SEPERATORS
 corresponding to an otlb-gps log entry."
   (let ((duration 0)
         (distance 0)
         pace-column
-        (new-lisp-table (list (car lisp-table))))
-    (dolist (lisp-row (butlast (cdr lisp-table)))
+        (new-lisp-table (list (car lisp-table-no-seperators))))
+    (dolist (lisp-row (butlast (cdr lisp-table-no-seperators)))
       (setq duration (+ duration (otlb-gps-string-to-duration (elt lisp-row 0))))
       (setq distance (+ distance (otlb-gps-string-to-distance (elt lisp-row 1))))
       (setq pace-column (nconc pace-column (list (otlb-gps-string-pace (elt lisp-row 0) (elt lisp-row 1))))))
-    (dolist (current-lisp-row (cdr (butlast lisp-table)))
+    (dolist (current-lisp-row (cdr (butlast lisp-table-no-seperators)))
       (setq new-lisp-table
             (nconc
              new-lisp-table
@@ -1385,7 +1385,7 @@ corresponding to an otlb-gps log entry."
                              (otlb-gps-pace-to-string (/
                                                        (/ duration 60.0)
                                                        (/ distance 1000.0))))
-                            (nthcdr 3 (car (last lisp-table)))))))
+                            (nthcdr 3 (car (last lisp-table-no-seperators)))))))
     new-lisp-table))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
