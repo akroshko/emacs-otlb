@@ -127,8 +127,8 @@ in appropriate place."
     (define-key map (kbd "s-p L")   'otlb-gps-cycle-shift)
     (define-key map (kbd "s-p s-L") 'otlb-gps-cycle-shift)
     ;; TODO: make sure this increments workouts
-    (define-key map (kbd "H-d")     'otlb-gps-map-preview)
-    (define-key map (kbd "s-o o") 'otlb-gps-map-open)
+    (define-key map (kbd "H-j")     'otlb-gps-map-preview)
+    (define-key map (kbd "s-o o")   'otlb-gps-map-open)
     (define-key map (kbd "s-o s-o") 'otlb-gps-map-open)
     (define-key map (kbd "s-p m")   'otlb-gps-open-cached-osm)
     (define-key map (kbd "s-p M-m") 'otlb-gps-open-google-earth)
@@ -194,8 +194,7 @@ in appropriate place."
 (defun otlb-setup-hook ()
   "Setup when otlb-gps-mode when activating org-mode."
   (when (otlb-buffer-p)
-    (otlb-gps-mode 1)
-    (org-toggle-headline-mode 0)))
+    (otlb-gps-mode 1)))
 
 (add-hook 'org-mode-hook 'otlb-setup-hook)
 
