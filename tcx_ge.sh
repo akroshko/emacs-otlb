@@ -33,6 +33,6 @@ main () {
     elif [[ "$1" == *.fit ]]; then
         gpsbabel -i garmin_fit -f "$1" -o kml -F "${TMPFILE}"
     fi
-    googleearth "${TMPFILE}"
+    google-earth "${TMPFILE}"
 }
 main "$@"
