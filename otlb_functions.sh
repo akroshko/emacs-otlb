@@ -54,8 +54,25 @@ get-otlb-source () {
     echo $DIR
 }
 
+# TODO: once a day is fine
+cron-cache-garmin-310 () {
+    FITDIRECTORY="$ANTCONFIG"/activities
+    OTLBSOURCE="$(get-otlb-source)"
+    THEIDS=$(python "$OTLBSOURCE"/read_files.py "$FITDIRECTORY" --fit-id)
+    mkdir -p "$HOME"/tmp
+    echo "$THEIDS" > "$HOME"/tmp/cache-garmin-310.txt
+}
+
+# testing
+# FITDIRECTORY="$ANTCONFIG"/activities;OTLBSOURCE="$(get-otlb-source)";time python "$OTLBSOURCE"/read_files.py "$FITDIRECTORY" --fit-id
+# TODO: cache if not exist... or if stale or corrupt...
 fetch-garmin-310 () {
     time {
+        if [[ $@ == *"--dry-run"* ]]; then
+            local DRYRUN="T"
+        else
+            local DRYRUN=""
+        fi
         # Fetch data from a GARMIN-310, could be easily modified to fetch
         # data from other devices compatible with the 'antfs-cli' package.
         # set up the specific directories based on the confiuration
@@ -87,8 +104,38 @@ fetch-garmin-310 () {
             local OTLBSOURCE="$(get-otlb-source)"
             pushd . >/dev/null
             cd "$OTLBLOGS"
-            echo "Scanning .fit directory"
-            THEIDS=$(python "$OTLBSOURCE"/read_files.py "$FITDIRECTORY" --fit-id)
+            echo "Scanning .fit directory..."
+            # TODO: load files....
+            # TODO: get the file list and read files that are not in the cache
+            # TODO: add THEIDS that are not in the cache
+            # TODO: get the cached files
+            local THECACHEDIDS=$(<"$HOME"/tmp/cache-garmin-310.txt)
+            local THECACHEDFILES=""
+            local OLDIFS=$IFS
+            IFS=$'\n'
+            for THEID in $THECACHEDIDS; do
+                # TODO: command and append stupidly inefficient, but at only 3 seconds....
+                XMLFILE=$(echo "$THEID" | cut -d' ' -f1)
+                THECACHEDFILES="$THECACHEDFILES $XMLFILE"
+            done
+            IFS=$OLDIFS
+            # echo "$THECACHEDIDS"
+            echo "Processed cached ids!"
+            # TODO: have a cache?
+            # THEIDS=$(python "$OTLBSOURCE"/read_files.py "$FITDIRECTORY" --fit-id)
+            # TODO: potential issue with doubled slashes...
+            for THEFILE in $FITDIRECTORY/*.fit;do
+                if [[ ! "$THECACHEDFILES" =~ $THEFILE ]]; then
+                    # read file....
+                    echo "Read: $THEFILE"
+                    local THENEWID=$(python "$OTLBSOURCE"/read_files.py "$THEFILE" --fit-id)
+                    # echo "$THENEWID"
+                    local THECACHEDIDS="${THECACHEDIDS}"$'\n'"${THENEWID}"
+                fi
+            done
+            local THEIDS="${THECACHEDIDS}"
+            echo "Found full ids!"
+            # echo "${THEIDS}"
             (IFS=$'\n'
              for THEID in $THEIDS; do
                  local XMLFILE=$(echo "$THEID" | cut -d' ' -f1)
@@ -98,13 +145,21 @@ fetch-garmin-310 () {
                      if [[ ! -e "${XMLFILE}" ]]; then
                          echo "Cannot copy ${XMLFILE}! Not found!"
                      else
-                         cp "${XMLFILE}" "${TCXDIRECTORY}/${XMLID}.fit"
+                         if [[ -z $DRYRUN ]]; then
+                             cp "${XMLFILE}" "${TCXDIRECTORY}/${XMLID}.fit"
+                         else
+                             echo "Dry run: cp ${XMLFILE} ${TCXDIRECTORY}/${XMLID}.fit"
+                         fi
                      fi
                  fi
              done)
-            echo "Creating osm maps"
-            cd "${TCXDIRECTORY}"
-            create-osm-maps
+            if [[ -z $DRYRUN ]]; then
+                echo "Creating osm maps"
+                cd "${TCXDIRECTORY}"
+                create-osm-maps
+            else
+                echo "Dry run! Not creating maps!"
+            fi
             popd >/dev/null
         fi
     }
