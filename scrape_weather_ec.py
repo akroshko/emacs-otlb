@@ -6,7 +6,7 @@
 # Author: Andrew Kroshko
 # Maintainer: Andrew Kroshko <akroshko@gmail.com>
 # Created: Sat Mar 28, 2015
-# Version: 20160525
+# Version: 20170928
 # URL: https://github.com/akroshko/python-stdlib-personal
 #
 # This program is free software: you can redistribute it and/or modify

@@ -7,7 +7,7 @@
 ;; Author: Andrew Kroshko
 ;; Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 ;; Created: Sun Apr  5, 2015
-;; Version: 20160525
+;; Version: 20170928
 ;; URL: https://github.com/akroshko/emacs-otlb
 ;;
 ;; This program is free software; you can redistribute it and/or
@@ -94,14 +94,12 @@ in appropriate place."
   (unless (string= (buffer-file-name) otlb-gps-pedestrian-location)
     (error "Appropriate buffer required for otlb commands!!!")))
 
-(defun otlb-gps-interactive-device (&optional device)
+(defun otlb-gps-interactive-refresh ()
   "For now this refreshes and ensures that commands are called
 in appropriate place."
   (unless (string= (buffer-file-name) otlb-gps-pedestrian-location)
     (error "Appropriate buffer required for otlb commands!!!"))
-  (if device
-      (otlb-gps-refresh-secondary)
-    (otlb-gps-refresh-primary)))
+  (otlb-gps-refresh))
 
 ;; only global key required!
 (global-set-key (kbd "s-j p") 'otlb-gps-find-pedestrian-location)
@@ -194,9 +192,16 @@ in appropriate place."
 (defun otlb-setup-hook ()
   "Setup when otlb-gps-mode when activating org-mode."
   (when (otlb-buffer-p)
+    ;; I like this mode, but it really slows down loading some org-mode files
     (otlb-gps-mode 1)))
 
 (add-hook 'org-mode-hook 'otlb-setup-hook)
+
+;; (defun otlb-gps-disable-org-bullets ()
+;;   (when (and (boundp 'org-bullets-mode) (string-match "pedestrian-log.org" (buffer-file-name)))
+;;     (org-bullets-mode -1)))
+
+;; (add-hook 'find-file-hook 'otlb-gps-disable-org-bullets)
 
 (defun otlb-gps-minibuffer-setup-hook ()
   "Make sure otlb-gps-mode is not interferring with minibuffer."
@@ -231,6 +236,7 @@ in appropriate place."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; reading data and inserting commands
 
+;; TODO: make these use multiple directories
 (defun otlb-gps-file-ids (location)
   "Walk GPS files to get all IDs, .tcx files only for now.  GPS
 files are in the format <<YYYYMMDD>>T<<HHMMSS>>, originally based
@@ -238,8 +244,9 @@ off of a tool for downloading off of a Garmin 305."
   (let ((otlb-gps-path location))
     (setq otlb-gps-file-ids nil)
     (cic:walk-path otlb-gps-path (lambda (d f) (otlb-gps-walker d f otlb-gps-file-ids)))
-    (setq otlb-gps-file-ids (sort otlb-gps-file-ids (lambda (i j) (not (string< (car i) (car j))))))))
+    (sort otlb-gps-file-ids (lambda (i j) (not (string< (car i) (car j)))))))
 
+;; TODO: make these use multiple directories
 (defun otlb-gps-walker (d f found-tcx)
   "Recursive helper function for walking .tcx files."
   (let ((full-path (concat (file-name-as-directory d) f)))
@@ -272,23 +279,36 @@ logbook."
       (add-to-list 'otlb-gps-missing-ids file-id)))
   (setq otlb-gps-missing-ids (nreverse otlb-gps-missing-ids)))
 
-(defun otlb-gps-refresh-primary ()
+(defun otlb-gps-refresh ()
   "Refresh information from the filesystem and logbook related to
 the primary device, generally used before an interactive command."
-  (otlb-gps-file-ids (car otlb-gps-locations))
+  ;; otlb-gps-file-ids reset
+  (setq otlb-gps-file-ids nil)
+  (dolist (otlb-gps-location otlb-gps-locations)
+    (setq otlb-gps-file-ids (append otlb-gps-file-ids (otlb-gps-file-ids otlb-gps-location))))
   (otlb-gps-log-ids))
 
-(defun otlb-gps-refresh-secondary ()
-  "Refresh information from the filesystem and logbook related to
-the secondary device, generally used before an interactive
-command."
-  (otlb-gps-file-ids (cadr otlb-gps-locations))
-  (otlb-gps-log-ids))
+;; (defun otlb-gps-refresh-secondary ()
+;;   "Refresh information from the filesystem and logbook related to
+;; the secondary device, generally used before an interactive
+;; command."
+;;   (otlb-gps-file-ids (cadr otlb-gps-locations))
+;;   (otlb-gps-log-ids))
 
 (defvar otlb-gps-id-history
   nil
   "The history of entered IDs, the same between all devices for
   now.")
+
+(defun otlb-gps-find-id-location (id)
+  (let (the-location)
+    (dolist (otlb-gps-location otlb-gps-locations)
+      (when (or
+             (file-exists-p (concat otlb-gps-location "/" id ".fit"))
+             (file-exists-p (concat otlb-gps-location "/" id ".tcx"))
+             (file-exists-p (concat otlb-gps-location "/" id ".gpx")))
+        (setq the-location otlb-gps-location)))
+    the-location))
 
 (defun otlb-gps-insert-auxiliary (&optional id)
   (interactive)
@@ -301,7 +321,7 @@ command."
   ;; sort first
   (goto-char (point-min))
   (otlb-gps-sort)
-  (otlb-gps-interactive-device device)
+  (otlb-gps-interactive-refresh)
   ;; insert newest if not given
   (unless id
     ;; have one alternate device for now, but will eventually choose
@@ -315,23 +335,21 @@ command."
   (when (member id otlb-gps-missing-ids)
     ;; create a new heading and table with raw data in the proper place
     (let* ( ;; TODO: different locations
-           (device-location (if device
-                                (cadr otlb-gps-locations)
-                              (car otlb-gps-locations)))
-           (fit-alist (cond ((file-exists-p (concat device-location "/" id ".fit"))
+           (id-location (otlb-gps-find-id-location id))
+           (fit-alist (cond ((file-exists-p (concat id-location "/" id ".fit"))
                              (with-temp-buffer
-                               (insert (shell-command-to-string (concat otlb-gps-read-fit-command " " device-location "/" id ".fit --fit")))
+                               (insert (shell-command-to-string (concat otlb-gps-read-fit-command " " id-location "/" id ".fit --fit")))
                                (goto-char (point-min))
                                ;; (mpp (buffer-substring (point-min) (point-max)))
                                (json-read)))
-                            ((file-exists-p (concat device-location "/" id ".tcx"))
+                            ((file-exists-p (concat id-location "/" id ".tcx"))
                              (with-temp-buffer
-                               (insert (shell-command-to-string (concat otlb-gps-read-tcx-command " " device-location "/" id ".tcx --tcx")))
+                               (insert (shell-command-to-string (concat otlb-gps-read-tcx-command " " id-location "/" id ".tcx --tcx")))
                                (goto-char (point-min))
                                (json-read)))
-                            ((file-exists-p (concat device-location "/" id ".gpx"))
+                            ((file-exists-p (concat id-location "/" id ".gpx"))
                              (with-temp-buffer
-                               (insert (shell-command-to-string (concat otlb-gps-read-gpx-command " " device-location "/" id ".gpx --gpx")))
+                               (insert (shell-command-to-string (concat otlb-gps-read-gpx-command " " id-location "/" id ".gpx --gpx")))
                                (goto-char (point-min))
                                (json-read)))))
            (fit-laps (cdr (assoc 'laps fit-alist)))
@@ -404,6 +422,7 @@ command."
       (move-end-of-line 1)
       (insert "\n")
       ;; create the drawer for the original table
+      ;; TODO: make sure device is appropriate
       (insert (concat  "  :PROPERTIES:\n"
                        "  :id: " id "\n"
                        "  :device: " (if device (cadr otlb-gps-devices) (car otlb-gps-devices)) "\n"
@@ -448,8 +467,7 @@ command."
   (flush-lines "^\\s-*$")
   ;; TODO: better function for finding newly inserted id
   (search-forward (concat ":id: " id))
-  (org-back-to-heading)
-  )
+  (org-back-to-heading))
 
 (defun otlb-gps-insert-unrecorded (&optional id)
   "Insert an unrecorded track.  Select start and end locations as
@@ -1299,10 +1317,11 @@ start time."
   (interactive)
   ;; get the current ID
   (let* ((id (otlb-gps-get-id))
+         (the-location (otlb-gps-find-id-location id))
          ;; TODO: allow on secondary devices too
-         (output-file (or (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".fit")) (concat (car otlb-gps-locations) "/" id ".fit"))
-                          (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".tcx")) (concat (car otlb-gps-locations) "/" id ".tcx"))
-                          (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".gpx")) (concat (car otlb-gps-locations) "/" id ".gpx")))))
+         (output-file (or (and (file-exists-p (concat the-location "/" id ".fit")) (concat the-location "/" id ".fit"))
+                          (and (file-exists-p (concat the-location "/" id ".tcx")) (concat the-location "/" id ".tcx"))
+                          (and (file-exists-p (concat the-location "/" id ".gpx")) (concat the-location "/" id ".gpx")))))
     ;; run script to convert to gpx and open in Google Earth
     (start-process "google earth" nil "nohup" otlb-gps-map-command output-file)))
 
@@ -1314,14 +1333,16 @@ start time."
   ;; TODO: make sure otlb-gps-get-id doesn't get on non-headings
   (when (eq last-command 'otlb-gps-map-preview)
     (outline-next-heading))
-  (let ((id (otlb-gps-get-id)))
+  (let* ((id (otlb-gps-get-id))
+         (the-location (otlb-gps-find-id-location id)))
     (with-current-buffer-create "*otlb map preview*"
       ;; TODO: do I need this here?
       (special-mode)
       (setq buffer-read-only nil)
       (erase-buffer)
       (display-buffer (with-current-buffer-create "*otlb map preview*"))
-      (insert-image (create-image (concat (car otlb-gps-locations) "/" id "-1280.png")))
+      ;; TOOD: fix this
+      (insert-image (create-image (concat the-location "/" id "-1280.png")))
       (image-mode)
       (goto-char (point-min))
       (setq buffer-read-only t))))
@@ -1329,16 +1350,18 @@ start time."
 (defun otlb-gps-map-open ()
   "Open the map of current logbook entry in feh."
   (interactive)
-  (let ((id (otlb-gps-get-id)))
-    (start-process "feh map" "*otlb feh maps*" "feh" (concat (car otlb-gps-locations) "/" id "-1280.png"))))
+  (let* ((id (otlb-gps-get-id))
+         (the-location (otlb-gps-find-id-location id)))
+    (start-process "feh map" "*otlb feh maps*" "feh" (concat the-location "/" id "-1280.png"))))
 
 (defun otlb-gps-graph-distance ()
   "Build a speed/elevation graph with respect to distance."
   (interactive)
   (let* ((id (otlb-gps-get-id))
-         (output-file (or (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".fit")) (concat (car otlb-gps-locations) "/" id ".fit"))
-                          (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".tcx")) (concat (car otlb-gps-locations) "/" id ".tcx"))
-                          (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".gpx")) (concat (car otlb-gps-locations) "/" id ".gpx")))))
+         (the-location (otlb-gps-find-id-location id))
+         (output-file (or (and (file-exists-p (concat the-location "/" id ".fit")) (concat the-location "/" id ".fit"))
+                          (and (file-exists-p (concat the-location "/" id ".tcx")) (concat the-location "/" id ".tcx"))
+                          (and (file-exists-p (concat the-location "/" id ".gpx")) (concat the-location "/" id ".gpx")))))
     ;; run script to graph it
     ;; TODO: want to record output here too
     (start-process "graph" "*graph output*" "nohup" "python" otlb-gps-graph-fit-command output-file "--graph-fit-distance")))
@@ -1347,9 +1370,10 @@ start time."
   "Build a speed/elevation graph with respect to elapsed time."
   (interactive)
   (let* ((id (otlb-gps-get-id))
-         (output-file (or (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".fit")) (concat (car otlb-gps-locations) "/" id ".fit"))
-                          (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".tcx")) (concat (car otlb-gps-locations) "/" id ".tcx"))
-                          (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".gpx")) (concat (car otlb-gps-locations) "/" id ".gpx")))))
+         (the-location (otlb-gps-find-id-location id))
+         (output-file (or (and (file-exists-p (concat the-location "/" id ".fit")) (concat the-location "/" id ".fit"))
+                          (and (file-exists-p (concat the-location "/" id ".tcx")) (concat the-location  "/" id ".tcx"))
+                          (and (file-exists-p (concat the-location "/" id ".gpx")) (concat the-location  "/" id ".gpx")))))
     ;; run script to graph it
     ;; TODO: want to record output here too
     (start-process "graph" "*graph output*" "nohup" "python" otlb-gps-graph-fit-command output-file "--graph-fit-time")))

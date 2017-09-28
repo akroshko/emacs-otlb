@@ -11,7 +11,7 @@
 # Author: Andrew Kroshko
 # Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 # Created: Fri Mar 27, 2015
-# Version: 20160525
+# Version: 20170928
 # URL: https://github.com/akroshko/emacs-otlb
 #
 # This program is free software: you can redistribute it and/or modify
@@ -54,7 +54,9 @@ get-otlb-source () {
     echo $DIR
 }
 
-# TODO: once a day is fine
+# TODO: several years takes about 9 minutes, I cron every hour, this is probably too costly
+#       maybe have a full cron every day and update based on new things every hour
+#       I won't be using my garmin more than hourly....
 cron-cache-garmin-310 () {
     FITDIRECTORY="$ANTCONFIG"/activities
     OTLBSOURCE="$(get-otlb-source)"
@@ -76,10 +78,12 @@ fetch-garmin-310 () {
         # Fetch data from a GARMIN-310, could be easily modified to fetch
         # data from other devices compatible with the 'antfs-cli' package.
         # set up the specific directories based on the confiuration
-        local INTERMEDIATEDIRECTORY="$OTLBLOGS"/"$DEVICENAME"-intermediate
+        # TODO: no intermediate directory anymore
+        # local INTERMEDIATEDIRECTORY="$OTLBLOGS"/"$DEVICENAME"-intermediate
         local FITDIRECTORY="$ANTCONFIG"/activities
         # TODO: outdated name
         local TCXDIRECTORY="$OTLBLOGS"/"$DEVICENAME"
+        local TCXDIRECTORYOLDER="$OTLBLOGSOLDER"/"$DEVICENAME"
         # there's probably a better way of dealing with arguments
         if [[ -z "$1" ]]; then
             echo "$USAGE"
@@ -140,7 +144,7 @@ fetch-garmin-310 () {
              for THEID in $THEIDS; do
                  local XMLFILE=$(echo "$THEID" | cut -d' ' -f1)
                  local XMLID=$(echo "$THEID"   | cut -d' ' -f2)
-                 if [[ ! -e "${TCXDIRECTORY}/${XMLID}.tcx" && ! -e "${TCXDIRECTORY}/${XMLID}.fit" ]]; then
+                 if [[ ! -e "${TCXDIRECTORY}/${XMLID}.tcx" && ! -e "${TCXDIRECTORY}/${XMLID}.fit" && ! -e "${TCXDIRECTORYOLDER}/${XMLID}.tcx" && ! -e "${TCXDIRECTORYOLDER}/${XMLID}.fit" ]]; then
                      echo "Missing $XMLID! Copying!"
                      if [[ ! -e "${XMLFILE}" ]]; then
                          echo "Cannot copy ${XMLFILE}! Not found!"

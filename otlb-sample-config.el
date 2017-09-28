@@ -3,7 +3,7 @@
 ;; Author: Andrew Kroshko
 ;; Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 ;; Created: Sun Apr  5, 2015
-;; Version: 20160525
+;; Version: 20170928
 ;; URL: https://github.com/akroshko/emacs-otlb
 ;;
 ;; This program is free software; you can redistribute it and/or
@@ -66,6 +66,7 @@
   (concat otlb-gps-root-text "/footwear-current.org")
   "The location of current footwear.")
 
+;; TODO: update this sample config
 (defconst otlb-gps-locations
   (mapcar (lambda (e) (concat otlb-gps-root-binary "/" (replace-regexp-in-string " " "-" e))) otlb-gps-devices)
   "The location where data from the devices are stored.")
