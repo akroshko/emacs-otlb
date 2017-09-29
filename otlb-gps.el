@@ -197,12 +197,6 @@ in appropriate place."
 
 (add-hook 'org-mode-hook 'otlb-setup-hook)
 
-;; (defun otlb-gps-disable-org-bullets ()
-;;   (when (and (boundp 'org-bullets-mode) (string-match "pedestrian-log.org" (buffer-file-name)))
-;;     (org-bullets-mode -1)))
-
-;; (add-hook 'find-file-hook 'otlb-gps-disable-org-bullets)
-
 (defun otlb-gps-minibuffer-setup-hook ()
   "Make sure otlb-gps-mode is not interferring with minibuffer."
   (otlb-gps-mode 0))
