@@ -54,9 +54,9 @@ get-otlb-source () {
     echo $DIR
 }
 
-# TODO: several years takes about 9 minutes, I cron every hour, this is probably too costly
-#       maybe have a full cron every day and update based on new things every hour
-#       I won't be using my garmin more than hourly....
+# TODO: several years takes about 9 minutes, I cron every three hours,
+#       this still may be too costly, maybe have a full cron every day
+#       and update based on missing
 cron-cache-garmin-310 () {
     FITDIRECTORY="$ANTCONFIG"/activities
     OTLBSOURCE="$(get-otlb-source)"
@@ -65,10 +65,17 @@ cron-cache-garmin-310 () {
     echo "$THEIDS" > "$HOME"/tmp/cache-garmin-310.txt
 }
 
+fetch-garmin-310-reset-download () {
+    fetch-garmin-310 --reset
+    sleep 1
+    fetch-garmin-310 --download
+}
+
 # testing
 # FITDIRECTORY="$ANTCONFIG"/activities;OTLBSOURCE="$(get-otlb-source)";time python "$OTLBSOURCE"/read_files.py "$FITDIRECTORY" --fit-id
 # TODO: cache if not exist... or if stale or corrupt...
 fetch-garmin-310 () {
+    h2
     time {
         if [[ $@ == *"--dry-run"* ]]; then
             local DRYRUN="T"
@@ -108,55 +115,68 @@ fetch-garmin-310 () {
             local OTLBSOURCE="$(get-otlb-source)"
             pushd . >/dev/null
             cd "$OTLBLOGS"
+            h2
             echo "Scanning .fit directory..."
-            # TODO: load files....
-            # TODO: get the file list and read files that are not in the cache
-            # TODO: add THEIDS that are not in the cache
-            # TODO: get the cached files
-            local THECACHEDIDS=$(<"$HOME"/tmp/cache-garmin-310.txt)
-            local THECACHEDFILES=""
-            local OLDIFS=$IFS
-            IFS=$'\n'
-            for THEID in $THECACHEDIDS; do
-                # TODO: command and append stupidly inefficient, but at only 3 seconds....
-                XMLFILE=$(echo "$THEID" | cut -d' ' -f1)
-                THECACHEDFILES="$THECACHEDFILES $XMLFILE"
-            done
-            IFS=$OLDIFS
-            # echo "$THECACHEDIDS"
-            echo "Processed cached ids!"
+            time {
+
+                # TODO: load files....
+                # TODO: get the file list and read files that are not in the cache
+                # TODO: add THEIDS that are not in the cache
+                # TODO: get the cached files
+                local THECACHEDIDS=$(<"$HOME"/tmp/cache-garmin-310.txt)
+                local THECACHEDFILES=""
+                local OLDIFS=$IFS
+                IFS=$'\n'
+                for THEID in $THECACHEDIDS; do
+                    # TODO: command and append stupidly inefficient, but at only 3 seconds....
+                    XMLFILE=$(echo "$THEID" | cut -d' ' -f1)
+                    THECACHEDFILES="$THECACHEDFILES $XMLFILE"
+                done
+                IFS=$OLDIFS
+                # echo "$THECACHEDIDS"
+                echo "Processed cached ids! The new .fit files aren't close to ready yet!"
+            }
             # TODO: have a cache?
             # THEIDS=$(python "$OTLBSOURCE"/read_files.py "$FITDIRECTORY" --fit-id)
             # TODO: potential issue with doubled slashes...
-            for THEFILE in $FITDIRECTORY/*.fit;do
-                if [[ ! "$THECACHEDFILES" =~ $THEFILE ]]; then
-                    # read file....
-                    echo "Read: $THEFILE"
-                    local THENEWID=$(python "$OTLBSOURCE"/read_files.py "$THEFILE" --fit-id)
-                    # echo "$THENEWID"
-                    local THECACHEDIDS="${THECACHEDIDS}"$'\n'"${THENEWID}"
-                fi
-            done
+            h2
+            echo "Finding the full ids to process..."
+            time {
+                for THEFILE in $FITDIRECTORY/*.fit;do
+                    if [[ ! "$THECACHEDFILES" =~ $THEFILE ]]; then
+                        # read file....
+                        echo "Read: $THEFILE"
+                        local THENEWID=$(python "$OTLBSOURCE"/read_files.py "$THEFILE" --fit-id)
+                        # echo "$THENEWID"
+                        local THECACHEDIDS="${THECACHEDIDS}"$'\n'"${THENEWID}"
+                    fi
+                done
             local THEIDS="${THECACHEDIDS}"
-            echo "Found full ids!"
+            echo "Found full ids to process! The new .fit files still aren't ready yet!"
+            }
             # echo "${THEIDS}"
-            (IFS=$'\n'
-             for THEID in $THEIDS; do
-                 local XMLFILE=$(echo "$THEID" | cut -d' ' -f1)
-                 local XMLID=$(echo "$THEID"   | cut -d' ' -f2)
-                 if [[ ! -e "${TCXDIRECTORY}/${XMLID}.tcx" && ! -e "${TCXDIRECTORY}/${XMLID}.fit" && ! -e "${TCXDIRECTORYOLDER}/${XMLID}.tcx" && ! -e "${TCXDIRECTORYOLDER}/${XMLID}.fit" ]]; then
-                     echo "Missing $XMLID! Copying!"
-                     if [[ ! -e "${XMLFILE}" ]]; then
-                         echo "Cannot copy ${XMLFILE}! Not found!"
-                     else
-                         if [[ -z $DRYRUN ]]; then
-                             cp "${XMLFILE}" "${TCXDIRECTORY}/${XMLID}.fit"
+            h2
+            echo "Copying the fit files..."
+            time {
+                (IFS=$'\n'
+                 for THEID in $THEIDS; do
+                     local XMLFILE=$(echo "$THEID" | cut -d' ' -f1)
+                     local XMLID=$(echo "$THEID"   | cut -d' ' -f2)
+                     if [[ ! -e "${TCXDIRECTORY}/${XMLID}.tcx" && ! -e "${TCXDIRECTORY}/${XMLID}.fit" && ! -e "${TCXDIRECTORYOLDER}/${XMLID}.tcx" && ! -e "${TCXDIRECTORYOLDER}/${XMLID}.fit" ]]; then
+                         echo "Missing $XMLID! Copying!"
+                         if [[ ! -e "${XMLFILE}" ]]; then
+                             echo "Cannot copy ${XMLFILE}! Not found!"
                          else
-                             echo "Dry run: cp ${XMLFILE} ${TCXDIRECTORY}/${XMLID}.fit"
+                             if [[ -z $DRYRUN ]]; then
+                                 cp "${XMLFILE}" "${TCXDIRECTORY}/${XMLID}.fit"
+                             else
+                                 echo "Dry run: cp ${XMLFILE} ${TCXDIRECTORY}/${XMLID}.fit"
+                             fi
                          fi
                      fi
-                 fi
-             done)
+                 done)
+                echo "The new .fit files are finally processed and ready!"
+            }
             if [[ -z $DRYRUN ]]; then
                 echo "Creating osm maps"
                 cd "${TCXDIRECTORY}"
