@@ -177,6 +177,7 @@ fetch-garmin-310 () {
                  done)
                 echo "The new .fit files are finally processed and ready!"
             }
+            h2
             if [[ -z $DRYRUN ]]; then
                 echo "Creating osm maps"
                 cd "${TCXDIRECTORY}"
