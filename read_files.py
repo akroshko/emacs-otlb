@@ -44,12 +44,11 @@
 # DEALINGS IN THE SOFTWARE.
 
 # TODO: needs documentation
-
 from __future__ import absolute_import, division
+import os,sys
 import lxml
 from lxml import etree
 import json
-import sys
 import tempfile
 import subprocess
 import math
