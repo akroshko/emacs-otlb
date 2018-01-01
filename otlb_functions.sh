@@ -98,17 +98,17 @@ fetch-garmin-310 () {
         fi
         # XXXX this is good to do if antfs-cli is hanging, can probably be
         # deleted at some point
-        if [[ "$1" == "--reset" ]]; then
+        if [[ $@ == *"--reset"* ]]; then
             rm "$ANTCONFIG"/authfile
             return 0
         fi
-        if [[ "$1" == "--download" ]]; then
+        if [[ $@ == *"--download"* ]]; then
             # currently used with my Garmin 310
             antfs-cli
             local DOWNLOAD_SUCCESSFUL=$?
         fi
         # check if downloaded files are already in intermediate directory
-        if [[ "$1" == "--process" || "$DOWNLOAD_SUCCESSFUL" == 0 ]]; then
+        if [[ $@ == *"--process"* || "$DOWNLOAD_SUCCESSFUL" == 0 ]]; then
             if [[ "$DOWNLOAD_SUCCESSFUL" == 0 ]]; then
                 echo "Download successful!!!"
             fi
