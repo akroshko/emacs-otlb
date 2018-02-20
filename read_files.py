@@ -3,7 +3,7 @@
 # Copyright (C) 2015-2016, Andrew Kroshko, all rights reserved.
 #
 # Author: Andrew Kroshko
-# Maintainer: Andrew Kroshko <akroshko@gmail.com>
+# Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 # Created: Sun May 1, 2016
 # Version: 20170928
 # URL: https://github.com/akroshko/emacs-otlb
