@@ -800,7 +800,7 @@ footwear."
     (cic:org-find-table)
     (let* ((table-lisp (cic:org-table-to-lisp-no-separators))
            (pairs (delq nil (mapcar (lambda (e)
-                                      (when (string= (cic:strip-full (elt e 9)) "")
+                                      (when (string= (s-trim-full (elt e 9)) "")
                                         (list (elt e 7)
                                               (elt e 8)
                                               (elt e 0)
@@ -969,7 +969,7 @@ kilometer."
 (defun otlb-gps-string-to-duration (str)
   "Convert the standard time string STR into a duration in
 seconds."
-  (let* ((str-strip-full (strip-full str))
+  (let* ((str-strip-full (s-trim-full str))
          str-split
          hours
          minute-split
@@ -995,7 +995,7 @@ meters."
 
 (defun otlb-gps-string-to-pace (str)
   "Convert the standard pace string STR into mins/km in decimal."
-  (let* ((str-strip-full (strip-full str))
+  (let* ((str-strip-full (s-trim-full str))
          str-split
          minutes
          seconds)
@@ -1193,8 +1193,8 @@ START-ID."
         time
         distance)
     (otlb-gps-table-last-row)
-    (setq time (strip-full-no-properties (org-table-get nil 1)))
-    (setq distance (strip-full-no-properties (org-table-get nil 2)))
+    (setq time (s-trim-full-no-properties (org-table-get nil 1)))
+    (setq distance (s-trim-full-no-properties (org-table-get nil 2)))
     (if (or (eq tag 'running) (eq tag 'walking))
         (list (list 'total (list (list id) distance time))
               (list tag (list (list id) distance time)))
@@ -1243,7 +1243,7 @@ start time."
     (if just-url
         (let ((browse-url-generic-program "conkeror"))
           (browse-url-generic weather-string))
-      (strip-full (replace-regexp-in-string "C" "°C" weather-string)))))
+      (s-trim-full (replace-regexp-in-string "C" "°C" weather-string)))))
 
 ;; TODO: one of the places that needs testing to make sure I'm counting properly
 (defun otlb-gps-shoe-totals ()
@@ -1261,7 +1261,7 @@ start time."
                              (otlb-gps-find-actual-table-last-row)
                              (list (org-table-get nil 6) (org-table-get nil 2)))))
     (setq ids (delq nil (mapcar (lambda (e)
-                                  (let ((shoe-id (ignore-errors (substring-no-properties (strip-full (cadr (split-string (car e)))))))
+                                  (let ((shoe-id (ignore-errors (substring-no-properties (s-trim-full (cadr (split-string (car e)))))))
                                         (kms (ignore-errors (cadr e))))
                                     (when (and (cic:is-not-empty-string-nil shoe-id) kms)
                                       (list shoe-id kms))))
@@ -1563,7 +1563,7 @@ sorted."
     (while (not (ignore-errors (assoc "ID" (org-entry-properties))))
       ;; TODO: replace with below, will not stop at end of buffer
       (forward-line))
-    (strip-full-no-properties (cdr (assoc "ID" (org-entry-properties))))))
+    (s-trim-full-no-properties (cdr (assoc "ID" (org-entry-properties))))))
 
 (defun otlb-gps-get-id-from-heading ()
   "Get GPS ID when directly at the heading.  Meant to be used
@@ -1573,7 +1573,7 @@ programaticly."
   (save-excursion
     ;; TODO: use bound to find next heading
     (when (search-forward ":id:" nil t)
-      (strip-full (elt (split-string (cic:get-current-line) ":") 2)))))
+      (s-trim-full (elt (split-string (cic:get-current-line) ":") 2)))))
 
 (defun otlb-gps-get-tag-from-heading ()
   "Get GPS tag when directly at the heading.  Meant to be used
