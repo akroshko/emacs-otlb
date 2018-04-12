@@ -1,11 +1,11 @@
 #!/usr/bin/python
 #
-# Copyright (C) 2015-2016, Andrew Kroshko, all rights reserved.
+# Copyright (C) 2015-2018, Andrew Kroshko, all rights reserved.
 #
 # Author: Andrew Kroshko
 # Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 # Created: Sun May 1, 2016
-# Version: 20170928
+# Version: 20180411
 # URL: https://github.com/akroshko/emacs-otlb
 #
 # This program is free software: you can redistribute it and/or modify
@@ -387,7 +387,8 @@ def main_fit_id(argv):
         session = next(activity.get_records_by_type('session'))
         start_time=session.get_data("start_time")
         theid=("%04d" % start_time.year)+("%02d" % start_time.month)+("%02d" % start_time.day)+'T'+("%02d" % start_time.hour)+("%02d" % start_time.minute)+("%02d" % start_time.second)
-        theids.append((filename,theid))
+        thefilenametimestamp=os.path.getmtime(filename)
+        theids.append((os.path.normpath(filename),theid))
     for theid in theids:
         print theid[0] + ' ' + theid[1]
 
@@ -494,6 +495,7 @@ def haversine_distance(origin, destination):
 if __name__ == "__main__":
     # TODO: detect filetype automatically
     # TODO: could ensure_ascii=False be required?
+    # TODO: use pymath here, but without numpy/scipy dependencies
     if '--fit' in sys.argv:
         print json.dumps(main_fit(sys.argv))
     elif '--graph-fit-distance' in sys.argv:

@@ -6,12 +6,12 @@
 #
 # Old code is also included for the Garmin 305.
 #
-# Copyright (C) 2015-2016, Andrew Kroshko, all rights reserved.
+# Copyright (C) 2015-2018, Andrew Kroshko, all rights reserved.
 #
 # Author: Andrew Kroshko
 # Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 # Created: Fri Mar 27, 2015
-# Version: 20170928
+# Version: 20180412
 # URL: https://github.com/akroshko/emacs-otlb
 #
 # This program is free software: you can redistribute it and/or modify
@@ -36,33 +36,71 @@
 #
 # See the included README.md file for more information.
 
-USAGE="Usage: fetch-garmin-310 [--reset] [--download] [--process]
-  --reset     Reset the authorization, required because after some time the
-              download stops working if not reset.
-  --download  Download files from watch to machine.
-  --process   Process the files into form ready for import in otlb."
+USAGE="Usage: fetch-garmin-310 [--reset] [--download] [--process] [--no-process]
+  --reset      Reset the authorization, required because after some time the
+               download stops working if not reset.
+  --download   Download files from watch to machine.
+  --process    Process the files into form ready for import in otlb.
+  --no-process Do not process the files into form ready for import in otlb, even if download successful.
+"
+
+export GARMIN310CACHE="$HOME"/tmp/cache-garmin-310.txt
+export FITDIRECTORY="$ANTCONFIG"/activities
 
 get-otlb-source () {
     # https://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in
     SOURCE="${BASH_SOURCE[0]}"
-    while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
-        local DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-        local SOURCE="$(readlink "$SOURCE")"
+    while [[ -h "$SOURCE" ]]; do # resolve $SOURCE until the file is no longer a symlink
+        DIRNAMESOURCE=$(dirname "$SOURCE")
+        local DIR=$(cd -P "$DIRNAMESOURCE" && pwd)
+        local SOURCE=$(readlink "$SOURCE")
         [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
     done
-    local DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+    local DIR=$(cd -P "$( dirname "$SOURCE" )" && pwd)
     echo $DIR
 }
 
 # TODO: several years takes about 9 minutes, I cron every three hours,
 #       this still may be too costly, maybe have a full cron every day
 #       and update based on missing
-cron-cache-garmin-310 () {
-    FITDIRECTORY="$ANTCONFIG"/activities
+cache-garmin-310-full () {
     OTLBSOURCE="$(get-otlb-source)"
     THEIDS=$(python "$OTLBSOURCE"/read_files.py "$FITDIRECTORY" --fit-id)
     mkdir -p "$HOME"/tmp
-    echo "$THEIDS" > "$HOME"/tmp/cache-garmin-310.txt
+    echo "$THEIDS" > "$GARMIN310CACHE"
+}
+
+# TODO: this whole cache thing should be in python
+cache-garmin-310-add () {
+    # add missing files to cache
+    if [[ -e "$GARMIN310CACHE" ]];then
+        # find things that are missing or have change since last one and repocess
+        # check for files in $FITDIRECTORY that are not in cacheids
+        local FITFILES=($(readlink -f "$FITDIRECTORY")/*.fit)
+        local ORPHANS=()
+        local OLDIFS=$IFS
+        IFS=$'\n'
+        for ((i=0; i<${#FITFILES[@]}; i++)); do
+            # do something to each element of array
+            # check if each fitfile is in cache, make this as easy as possible
+            # TODO: should already be normalized
+            FITFILE="${FITFILES[$i]}"
+            echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+            # TODO: I hope this grep is robust enough
+            if grep "${FITFILES[$i]}" "$GARMIN310CACHE" >/dev/null 2>&1; then
+                msg "Found ${FITFILES[$i]}!!!"
+            else
+                ORPHANS+="${FITFILES[$i]}"
+                warn "Not found for ${FITFILES[$i]}!!!"
+            fi
+            echo "--------------------"
+        done
+        IFS=$OLDIFS
+        echo "${ORPHANS[@]}"
+        # TODO: calculate and add to cached file if
+    else
+        yell "Garmin 310 cache not present, rebuild whole thing!"
+    fi
 }
 
 fetch-garmin-310-reset-download () {
@@ -87,7 +125,6 @@ fetch-garmin-310 () {
         # set up the specific directories based on the confiuration
         # TODO: no intermediate directory anymore
         # local INTERMEDIATEDIRECTORY="$OTLBLOGS"/"$DEVICENAME"-intermediate
-        local FITDIRECTORY="$ANTCONFIG"/activities
         # TODO: outdated name
         local TCXDIRECTORY="$OTLBLOGS"/"$DEVICENAME"
         local TCXDIRECTORYOLDER="$OTLBLOGSOLDER"/"$DEVICENAME"
@@ -99,7 +136,7 @@ fetch-garmin-310 () {
         # XXXX this is good to do if antfs-cli is hanging, can probably be
         # deleted at some point
         if [[ $@ == *"--reset"* ]]; then
-            rm "$ANTCONFIG"/authfile
+            [[ -e "$ANTCONFIG"/authfile ]] && rm "$ANTCONFIG"/authfile
             return 0
         fi
         if [[ $@ == *"--download"* ]]; then
@@ -108,7 +145,7 @@ fetch-garmin-310 () {
             local DOWNLOAD_SUCCESSFUL=$?
         fi
         # check if downloaded files are already in intermediate directory
-        if [[ $@ == *"--process"* || "$DOWNLOAD_SUCCESSFUL" == 0 ]]; then
+        if [[ ! $@ == *"--no-process"* ]] && [[ $@ == *"--process"* || "$DOWNLOAD_SUCCESSFUL" == 0 ]]; then
             if [[ "$DOWNLOAD_SUCCESSFUL" == 0 ]]; then
                 echo "Download successful!!!"
             fi
@@ -118,19 +155,18 @@ fetch-garmin-310 () {
             h2
             echo "Scanning .fit directory..."
             time {
-
                 # TODO: load files....
                 # TODO: get the file list and read files that are not in the cache
                 # TODO: add THEIDS that are not in the cache
                 # TODO: get the cached files
-                local THECACHEDIDS=$(<"$HOME"/tmp/cache-garmin-310.txt)
+                local THECACHEDIDS=$(<"$GARMIN310CACHE")
                 local THECACHEDFILES=""
                 local OLDIFS=$IFS
                 IFS=$'\n'
                 for THEID in $THECACHEDIDS; do
                     # TODO: command and append stupidly inefficient, but at only 3 seconds....
-                    XMLFILE=$(echo "$THEID" | cut -d' ' -f1)
-                    THECACHEDFILES="$THECACHEDFILES $XMLFILE"
+                    local CACHEDFILE=$(echo "$THEID" | cut -d' ' -f1)
+                    THECACHEDFILES="$THECACHEDFILES $CACHEDFILE"
                 done
                 IFS=$OLDIFS
                 # echo "$THECACHEDIDS"
@@ -139,38 +175,39 @@ fetch-garmin-310 () {
             # TODO: have a cache?
             # THEIDS=$(python "$OTLBSOURCE"/read_files.py "$FITDIRECTORY" --fit-id)
             # TODO: potential issue with doubled slashes...
+            local THEMISSINGFITS=""
             h2
             echo "Finding the full ids to process..."
             time {
-                for THEFILE in $FITDIRECTORY/*.fit;do
-                    if [[ ! "$THECACHEDFILES" =~ $THEFILE ]]; then
+                for THEFITFILE in $FITDIRECTORY/*.fit;do
+                    THEFITFILENORMALIZED=$(readlink -f $THEFITFILE)
+                    if [[ ! "$THECACHEDFILES" =~ $THEFITFILENORMALIZED ]]; then
                         # read file....
-                        echo "Read: $THEFILE"
-                        local THENEWID=$(python "$OTLBSOURCE"/read_files.py "$THEFILE" --fit-id)
+                        echo "Read: $THEFITFILE"
+                        local THEMISSINGID=$(python "$OTLBSOURCE"/read_files.py "$THEFITFILE" --fit-id)
                         # echo "$THENEWID"
-                        local THECACHEDIDS="${THECACHEDIDS}"$'\n'"${THENEWID}"
+                        THEMISSINGFITS="${THEMISSINGFITS}"$'\n'"${THEMISSINGID}"
                     fi
                 done
-            local THEIDS="${THECACHEDIDS}"
-            echo "Found full ids to process! The new .fit files still aren't ready yet!"
+                echo "Found full ids to process! The new .fit files still aren't ready yet!"
             }
-            # echo "${THEIDS}"
             h2
             echo "Copying the fit files..."
             time {
+                # TODO: can only use subshell here because I am not
                 (IFS=$'\n'
-                 for THEID in $THEIDS; do
-                     local XMLFILE=$(echo "$THEID" | cut -d' ' -f1)
-                     local XMLID=$(echo "$THEID"   | cut -d' ' -f2)
-                     if [[ ! -e "${TCXDIRECTORY}/${XMLID}.tcx" && ! -e "${TCXDIRECTORY}/${XMLID}.fit" && ! -e "${TCXDIRECTORYOLDER}/${XMLID}.tcx" && ! -e "${TCXDIRECTORYOLDER}/${XMLID}.fit" ]]; then
-                         echo "Missing $XMLID! Copying!"
-                         if [[ ! -e "${XMLFILE}" ]]; then
-                             echo "Cannot copy ${XMLFILE}! Not found!"
+                 for THEMISSINGFIT in $THEMISSINGFITS; do
+                     local THESOURCEFILE=$(echo "$THEMISSINGFIT" | cut -d' ' -f1)
+                     local THEID=$(echo "$THEMISSINGFIT"   | cut -d' ' -f2)
+                     if [[ ! -e "${TCXDIRECTORY}/${THEID}.tcx" && ! -e "${TCXDIRECTORY}/${THEID}.fit" && ! -e "${TCXDIRECTORYOLDER}/${THEID}.tcx" && ! -e "${TCXDIRECTORYOLDER}/${THEID}.fit" ]]; then
+                         echo "Missing $THEID! Copying!"
+                         if [[ ! -e "${THESOURCEFILE}" ]]; then
+                             echo "Cannot copy ${THESOURCEFILE}! Not found!"
                          else
                              if [[ -z $DRYRUN ]]; then
-                                 cp "${XMLFILE}" "${TCXDIRECTORY}/${XMLID}.fit"
+                                 cp "${THESOURCEFILE}" "${TCXDIRECTORY}/${THEID}.fit"
                              else
-                                 echo "Dry run: cp ${XMLFILE} ${TCXDIRECTORY}/${XMLID}.fit"
+                                 echo "Dry run: cp ${THESOURCEFILE} ${TCXDIRECTORY}/${THEID}.fit"
                              fi
                          fi
                      fi
