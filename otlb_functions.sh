@@ -109,7 +109,6 @@ fetch-garmin-310-reset-download () {
     fetch-garmin-310 --download
 }
 
-# testing
 # FITDIRECTORY="$ANTCONFIG"/activities;OTLBSOURCE="$(get-otlb-source)";time python "$OTLBSOURCE"/read_files.py "$FITDIRECTORY" --fit-id
 # TODO: cache if not exist... or if stale or corrupt...
 fetch-garmin-310 () {
@@ -123,8 +122,6 @@ fetch-garmin-310 () {
         # Fetch data from a GARMIN-310, could be easily modified to fetch
         # data from other devices compatible with the 'antfs-cli' package.
         # set up the specific directories based on the confiuration
-        # TODO: no intermediate directory anymore
-        # local INTERMEDIATEDIRECTORY="$OTLBLOGS"/"$DEVICENAME"-intermediate
         # TODO: outdated name
         local TCXDIRECTORY="$OTLBLOGS"/"$DEVICENAME"
         local TCXDIRECTORYOLDER="$OTLBLOGSOLDER"/"$DEVICENAME"
@@ -133,8 +130,7 @@ fetch-garmin-310 () {
             echo "$USAGE"
             return 0;
         fi
-        # XXXX this is good to do if antfs-cli is hanging, can probably be
-        # deleted at some point
+        # XXXX this seems to be necessary about once a day, but hangs if I do it every time
         if [[ $@ == *"--reset"* ]]; then
             [[ -e "$ANTCONFIG"/authfile ]] && rm "$ANTCONFIG"/authfile
             return 0
@@ -155,26 +151,21 @@ fetch-garmin-310 () {
             h2
             echo "Scanning .fit directory..."
             time {
-                # TODO: load files....
-                # TODO: get the file list and read files that are not in the cache
-                # TODO: add THEIDS that are not in the cache
                 # TODO: get the cached files
-                local THECACHEDIDS=$(<"$GARMIN310CACHE")
+                local THECACHEDFITS=$(<"$GARMIN310CACHE")
                 local THECACHEDFILES=""
+                # build up a list of which .fit files have cached ids to match
                 local OLDIFS=$IFS
                 IFS=$'\n'
-                for THEID in $THECACHEDIDS; do
-                    # TODO: command and append stupidly inefficient, but at only 3 seconds....
-                    local CACHEDFILE=$(echo "$THEID" | cut -d' ' -f1)
+                for THEFIT in $THECACHEDFITS; do
+                    # TODO: command and append at each loop stupidly inefficient, but at only 3 seconds....
+                    local CACHEDFILE=$(echo "$THEFIT" | cut -d' ' -f1)
                     THECACHEDFILES="$THECACHEDFILES $CACHEDFILE"
                 done
                 IFS=$OLDIFS
-                # echo "$THECACHEDIDS"
+                # echo "$THECACHEDFITS"
                 echo "Processed cached ids! The new .fit files aren't close to ready yet!"
             }
-            # TODO: have a cache?
-            # THEIDS=$(python "$OTLBSOURCE"/read_files.py "$FITDIRECTORY" --fit-id)
-            # TODO: potential issue with doubled slashes...
             local THEMISSINGFITS=""
             h2
             echo "Finding the full ids to process..."
@@ -197,17 +188,17 @@ fetch-garmin-310 () {
                 # TODO: can only use subshell here because I am not
                 (IFS=$'\n'
                  for THEMISSINGFIT in $THEMISSINGFITS; do
-                     local THESOURCEFILE=$(echo "$THEMISSINGFIT" | cut -d' ' -f1)
-                     local THEID=$(echo "$THEMISSINGFIT"   | cut -d' ' -f2)
+                     local THEORIGINALFIT=$(echo "$THEMISSINGFIT" | cut -d' ' -f1)
+                     local THEID=$(echo "$THEMISSINGFIT" | cut -d' ' -f2)
                      if [[ ! -e "${TCXDIRECTORY}/${THEID}.tcx" && ! -e "${TCXDIRECTORY}/${THEID}.fit" && ! -e "${TCXDIRECTORYOLDER}/${THEID}.tcx" && ! -e "${TCXDIRECTORYOLDER}/${THEID}.fit" ]]; then
                          echo "Missing $THEID! Copying!"
-                         if [[ ! -e "${THESOURCEFILE}" ]]; then
-                             echo "Cannot copy ${THESOURCEFILE}! Not found!"
+                         if [[ ! -e "${THEORIGINALFIT}" ]]; then
+                             echo "Cannot copy ${THEORIGINALFIT}! Not found!"
                          else
                              if [[ -z $DRYRUN ]]; then
-                                 cp "${THESOURCEFILE}" "${TCXDIRECTORY}/${THEID}.fit"
+                                 cp "${THEORIGINALFIT}" "${TCXDIRECTORY}/${THEID}.fit"
                              else
-                                 echo "Dry run: cp ${THESOURCEFILE} ${TCXDIRECTORY}/${THEID}.fit"
+                                 echo "Dry run: cp ${THEORIGINALFIT} ${TCXDIRECTORY}/${THEID}.fit"
                              fi
                          fi
                      fi
