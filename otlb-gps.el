@@ -2,12 +2,12 @@
 ;;; which is centered around GPS data that has been downloaded from a
 ;;; Garmin 310XT fitness watch or Samsung Galaxy SIII phone.
 ;;
-;; Copyright (C) 2015-2016, Andrew Kroshko, all rights reserved.
+;; Copyright (C) 2015-2018, Andrew Kroshko, all rights reserved.
 ;;
 ;; Author: Andrew Kroshko
 ;; Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 ;; Created: Sun Apr  5, 2015
-;; Version: 20170928
+;; Version: 20180412
 ;; URL: https://github.com/akroshko/emacs-otlb
 ;;
 ;; This program is free software; you can redistribute it and/or
@@ -243,13 +243,15 @@ off of a tool for downloading off of a Garmin 305."
 ;; TODO: make these use multiple directories
 (defun otlb-gps-walker (d f found-tcx)
   "Recursive helper function for walking .tcx files."
-  (let ((full-path (concat (file-name-as-directory d) f)))
+  (let ((full-path (concat (file-name-as-directory d) f))
+        (f-extension (file-name-extension f))
+        (f-no-extension (file-name-sans-extension f)))
     ;; extension
     (cond ((file-directory-p full-path)
            (cic:walk-path full-path (lambda (d f) (otlb-gps-walker d f otlb-gps-file-ids))))
-          ((or (string= (file-name-extension f) "tcx") (string= (file-name-extension f) "gpx") (string= (file-name-extension f) "fit"))
+          ((member f-extension '("tcx" "gpx" "fit"))
            (add-to-list 'otlb-gps-file-ids
-                        (list (file-name-sans-extension f) full-path))))))
+                        (list f-no-extension full-path))))))
 
 (defun otlb-gps-log-ids ()
   "Get all GPS IDs from the configured logbook."
@@ -297,6 +299,7 @@ the primary device, generally used before an interactive command."
 (defun otlb-gps-find-id-location (id)
   (let (the-location)
     (dolist (otlb-gps-location otlb-gps-locations)
+      ;; TODO: can I
       (when (or
              (file-exists-p (concat otlb-gps-location "/" id ".fit"))
              (file-exists-p (concat otlb-gps-location "/" id ".tcx"))
@@ -370,7 +373,12 @@ the primary device, generally used before an interactive command."
            ;; TODO: fix this, determine time zone from coords and/or get from watch?
            (time-zone -6.0 ;; (cadr (assoc 'time-zone read-alist))
                       )
-           (header-message (concat id "\nDay: " (otlb-gps-id-to-full-date id) "\nDistance: " (number-to-string total-distance) "m\nTime: " (number-to-string total-time) "s\nPace: " (number-to-string total-pace) " min/km\n# of laps: " (number-to-string (length lap-times)) "\n"))
+           (header-message (concat id "\nDay: "       (otlb-gps-id-to-full-date id)
+                                      "\nDistance: "  (number-to-string total-distance) "m"
+                                      "\nTime: "      (number-to-string total-time) "s"
+                                      "\nPace: "      (number-to-string total-pace) " min/km"
+                                      "\n# of laps: " (number-to-string (length lap-times))
+                                      "\n"))
            (the-shoes (let ((shoes (otlb-gps-select-shoes header-message)))
                         (if (eq shoes 'cancel)
                             ""
@@ -384,17 +392,17 @@ the primary device, generally used before an interactive command."
                           "  |---+---+---+---+---+---|\n"))
       (dolist (lap lap-tuple)
         (setq table (concat table "  | "
-                            (otlb-gps-duration-to-string (car lap)) " | "
-                            (otlb-gps-distance-to-string (cadr lap)) " | "
-                            (otlb-gps-pace-to-string (caddr lap)) " | "
-                            (otlb-gps-hr-number-to-string (cadddr lap)) " | "
+                            (otlb-gps-duration-to-string (car lap))           " | "
+                            (otlb-gps-distance-to-string (cadr lap))          " | "
+                            (otlb-gps-pace-to-string (caddr lap))             " | "
+                            (otlb-gps-hr-number-to-string (cadddr lap))       " | "
                             (otlb-gps-hr-number-to-string (cadddr (cdr lap))) " |\n")))
       (setq table (concat table
                           "  |---+---+---+---+---+----|\n"
                           "  | "
-                          (otlb-gps-duration-to-string total-time) " | "
+                          (otlb-gps-duration-to-string total-time)     " | "
                           (otlb-gps-distance-to-string total-distance) " | "
-                          (otlb-gps-pace-to-string total-pace)
+                          (otlb-gps-pace-to-string     total-pace)
                           "  | | | " the-shoes " |   |\n"
                           "  |---+---+---+---+---+---|\n"
                           "  #+TBLEL: otlb-gps-calc\n"

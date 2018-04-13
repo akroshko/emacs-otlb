@@ -4,12 +4,12 @@
 #
 # Old code is included for the Garmin 305.
 #
-# Copyright (C) 2015-2016, Andrew Kroshko, all rights reserved.
+# Copyright (C) 2015-2018, Andrew Kroshko, all rights reserved.
 #
 # Author: Andrew Kroshko
 # Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 # Created: Fri Mar 27, 2015
-# Version: 20170928
+# Version: 20180412
 # URL: https://github.com/akroshko/emacs-otlb
 #
 # This program is free software: you can redistribute it and/or modify
