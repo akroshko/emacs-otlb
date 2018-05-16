@@ -11,7 +11,7 @@
 # Author: Andrew Kroshko
 # Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 # Created: Fri Mar 27, 2015
-# Version: 20180412
+# Version: 20180516
 # URL: https://github.com/akroshko/emacs-otlb
 #
 # This program is free software: you can redistribute it and/or modify
@@ -87,7 +87,7 @@ cache-garmin-310-add () {
             FITFILE="${FITFILES[$i]}"
             echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
             # TODO: I hope this grep is robust enough
-            if grep "${FITFILES[$i]}" "$GARMIN310CACHE" >/dev/null 2>&1; then
+            if grep -- "${FITFILES[$i]}" "$GARMIN310CACHE" >/dev/null 2>&1; then
                 msg "Found ${FITFILES[$i]}!!!"
             else
                 ORPHANS+="${FITFILES[$i]}"
