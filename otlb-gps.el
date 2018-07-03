@@ -7,7 +7,7 @@
 ;; Author: Andrew Kroshko
 ;; Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 ;; Created: Sun Apr  5, 2015
-;; Version: 20180516
+;; Version: 20180703
 ;; URL: https://github.com/akroshko/emacs-otlb
 ;;
 ;; This program is free software; you can redistribute it and/or
@@ -102,7 +102,7 @@ in appropriate place."
   (otlb-gps-refresh))
 
 ;; only global key required!
-(global-set-key (kbd "s-j p") 'otlb-gps-find-pedestrian-location)
+(global-set-key (kbd "s-j l p") 'otlb-gps-find-pedestrian-location)
 
 (defvar otlb-gps-mode-map
   nil
@@ -112,39 +112,37 @@ in appropriate place."
 (defun otlb-gps-mode-map ()
   "Return a standard mode map for otlb-gps."
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "s-p *")   'otlb-gps-recalculate-all)
-    (define-key map (kbd "s-p c")   'otlb-gps-insert-conditions)
-    (define-key map (kbd "s-p f")   'otlb-gps-fetch)
-    (define-key map (kbd "s-p M-g") 'otlb-gps-graph-distance)
-    (define-key map (kbd "s-p g")   'otlb-gps-graph-time)
-    (define-key map (kbd "s-p i")   'otlb-gps-insert)
-    (define-key map (kbd "s-p M-i") 'otlb-gps-insert-auxiliary)
-    ;; (define-key map (kbd "s-p l")   'otlb-gps-cycle)
-    ;; (define-key map (kbd "s-p s-l") 'otlb-gps-cycle)
+    (define-key map (kbd "s-l *")   'otlb-gps-recalculate-all)
+    (define-key map (kbd "s-l c")   'otlb-gps-insert-conditions)
+    (define-key map (kbd "s-l f")   'otlb-gps-fetch)
+    (define-key map (kbd "s-l M-g") 'otlb-gps-graph-distance)
+    (define-key map (kbd "s-l g")   'otlb-gps-graph-time)
+    (define-key map (kbd "s-l i")   'otlb-gps-insert)
+    (define-key map (kbd "s-l M-i") 'otlb-gps-insert-auxiliary)
     ;; TODO: do I really want this capitalization?
-    (define-key map (kbd "s-p L")   'otlb-gps-cycle-shift)
-    (define-key map (kbd "s-p s-L") 'otlb-gps-cycle-shift)
+    (define-key map (kbd "s-l L")   'otlb-gps-cycle-shift)
+    (define-key map (kbd "s-l s-L") 'otlb-gps-cycle-shift)
     ;; TODO: make sure this increments workouts
     (define-key map (kbd "H-j")     'otlb-gps-map-preview)
     (define-key map (kbd "s-o o")   'otlb-gps-map-open)
     (define-key map (kbd "s-o s-o") 'otlb-gps-map-open)
-    (define-key map (kbd "s-p m")   'otlb-gps-open-cached-osm)
-    (define-key map (kbd "s-p M-m") 'otlb-gps-open-google-earth)
-    (define-key map (kbd "s-p n")   'otlb-gps-insert-note)
+    (define-key map (kbd "s-l m")   'otlb-gps-open-cached-osm)
+    (define-key map (kbd "s-l M-m") 'otlb-gps-open-google-earth)
+    (define-key map (kbd "s-l n")   'otlb-gps-insert-note)
     ;; TODO: o=other, change names
-    (define-key map (kbd "s-p o")   'otlb-gps-insert-miscellaneous)
-    (define-key map (kbd "s-p M-o") 'otlb-gps-insert-miscellaneous-ask)
+    (define-key map (kbd "s-l o")   'otlb-gps-insert-miscellaneous)
+    (define-key map (kbd "s-l M-o") 'otlb-gps-insert-miscellaneous-ask)
     ;; TODO: fix these
     ;; (define-key map (kbd "s-p M-p") 'otlb-gps-plot-running-weekly-totals)
     ;; (define-key map (kbd "s-p p")   'otlb-gps-plot-per-week-totals)
-    (define-key map (kbd "s-p p")   'otlb-gps-cycle)
-    (define-key map (kbd "s-p s-p") 'otlb-gps-cycle)
+    (define-key map (kbd "s-l l")   'otlb-gps-cycle)
+    (define-key map (kbd "s-l s-l") 'otlb-gps-cycle)
     ;; used to be s-p q, but trying this out...
     (define-key map (kbd "H-r")     'otlb-gps-toggle-quality)
-    (define-key map (kbd "s-p s")   'otlb-gps-sort)
-    (define-key map (kbd "s-p t")   'otlb-gps-toggle)
-    (define-key map (kbd "s-p u")   'otlb-gps-insert-unrecorded)
-    (define-key map (kbd "s-p w")   'otlb-gps-footwear)
+    (define-key map (kbd "s-l s")   'otlb-gps-sort)
+    (define-key map (kbd "s-l t")   'otlb-gps-toggle)
+    (define-key map (kbd "s-l u")   'otlb-gps-insert-unrecorded)
+    (define-key map (kbd "s-l w")   'otlb-gps-footwear)
     (define-key map (kbd "H-t")     'otlb-gps-toggle)
     ;; menus
     (define-key map [menu-bar otlb-gps] (cons "otlb-gps" (make-sparse-keymap "otlb-gps")))
@@ -1325,6 +1323,7 @@ start time."
                           (and (file-exists-p (concat the-location "/" id ".tcx")) (concat the-location "/" id ".tcx"))
                           (and (file-exists-p (concat the-location "/" id ".gpx")) (concat the-location "/" id ".gpx")))))
     ;; run script to convert to gpx and open in Google Earth
+    ;; TODO: change to google-chrome https://earth.google.com/web
     (start-process "google earth" nil "nohup" otlb-gps-map-command output-file)))
 
 (defun otlb-gps-map-preview ()
@@ -1725,5 +1724,168 @@ END-ID."
                  (let ((the-body ,@body))
                    (when the-body
                      (setq ,accum (cons the-body ,accum))))))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; useful tblel
+
+;; (otlb-gps-string-pace "1h20:00" (number-to-string half-marathon-distance))
+;; (otlb-gps-string-to-duration "20:00")
+;; (otlb-gps-string-to-distance "5")
+
+(defconst marathon-distance 42.195)
+(defconst half-marathon-distance (/ marathon-distance 2.0))
+
+;; (otlb-gps-string-pace-numeric "20:00" "5")
+(defun otlb-gps-string-pace-numeric (duration distance)
+  "Convert a DURATION and DISTANCE to a string giving pace."
+  (/
+   (/ (otlb-gps-string-to-duration duration) 60.0)
+   (/ (otlb-gps-string-to-distance distance) 1000.0)))
+
+;; (otlb-gps-minutes-to-string 0.23)
+;; (otlb-gps-minutes-to-string 1.23)
+(defun otlb-gps-minutes-to-string (duration)
+  (let* ((seconds (* 60 duration))
+         (minutes (floor duration))
+         (hours   (floor (/ duration 60.0))))
+    (if (> hours 0.0)
+        (format "%dh%02d:%04.1f" hours (- minutes (* hours 60)) (- seconds (* minutes 60) ))
+      (format "%d:%04.1f" minutes (- seconds (* minutes 60) )))))
+
+(defun tblel-pace-table (lisp-table lisp-table-no-seperators)
+  (let* ((second-row (elt lisp-table-no-seperators 1))
+         ;; get times and calculate goal pace based on ???
+         ;; TODO: deal with missing
+         (goal-5k                (elt second-row 0))
+         (goal-5k-pace           (otlb-gps-string-pace goal-5k "5"))
+         (goal-5k-pace-numeric   (otlb-gps-string-pace-numeric goal-5k "5"))
+         (goal-10k               (elt second-row 2))
+         (goal-10k-pace          (otlb-gps-string-pace goal-10k "10"))
+         (goal-10k-pace-numeric  (otlb-gps-string-pace-numeric goal-10k "10"))
+         (goal-10k-multiplier    (/ (otlb-gps-string-pace-numeric goal-10k "10") goal-5k-pace-numeric))
+         (goal-half              (elt second-row 4))
+         (goal-half-pace         (otlb-gps-string-pace            goal-half (number-to-string half-marathon-distance)))
+         (goal-half-pace-numeric (otlb-gps-string-pace-numeric    goal-half (number-to-string half-marathon-distance)))
+         (goal-half-multiplier   (/ (otlb-gps-string-pace-numeric goal-half (number-to-string half-marathon-distance)) goal-5k-pace-numeric))
+         (goal-full              (elt second-row 6))
+         (goal-full-pace         (otlb-gps-string-pace            goal-full (number-to-string marathon-distance)))
+         (goal-full-pace-numeric (otlb-gps-string-pace-numeric    goal-full (number-to-string marathon-distance)))
+         (goal-full-multiplier   (/ (otlb-gps-string-pace-numeric goal-full (number-to-string marathon-distance)) goal-5k-pace-numeric))
+         ;; calculate training pace strings
+         ;; 200m,300m,400m repititions
+         ;; TODO: also measure per 200m
+         (repetition-short-multiplier 0.905)
+         (repetition-short-pace (* repetition-short-multiplier goal-5k-pace-numeric))
+         (repetition-short-pace-track-200m (/ repetition-short-pace 5.0))
+         (repetition-short-pace-track-300m (/ repetition-short-pace (/ 10.0 3.0)))
+         (repetition-short-pace-track-400m (/ repetition-short-pace 2.5))
+         ;; 600m,800m,1000m repitions
+         ;; TODO: also measure per 200m
+         (repetition-long-multiplier 0.9525)
+         (repetition-long-pace (* repetition-long-multiplier goal-5k-pace-numeric))
+         (repetition-long-pace-track-200m  (/ repetition-long-pace 5.0))
+         (repetition-long-pace-track-600m  (* repetition-long-pace (/ 6.0 10.0)))
+         (repetition-long-pace-track-800m  (* repetition-long-pace (/ 8.0 10.0)))
+         (repetition-long-pace-track-1000m repetition-long-pace)
+         ;; interval training, around 5k pace
+         ;; TODO:
+         (interval-multiplier-lower 1.0)
+         (interval-pace-lower (* interval-multiplier-lower goal-5k-pace-numeric))
+         (interval-multiplier-upper 1.05)
+         (interval-pace-upper (* interval-multiplier-upper goal-5k-pace-numeric))
+         ;; threshold interval training, average 10k and half pace
+         ;; TODO: upper lower, maybe base on 5k pace still, but include marathon pace too
+         (interval-threshold-multiplier (/ (/ (+ goal-half-pace-numeric goal-10k-pace-numeric) 2.0) goal-5k-pace-numeric))
+         (interval-threshold-pace (/ (+ goal-half-pace-numeric goal-10k-pace-numeric) 2.0))
+         ;; tempo run pace
+         ;; TODO: upper lower, maybe base on 5k pace still, but include marathon pace too
+         (tempo-run-multiplier (/ (/ (+ goal-full-pace-numeric goal-half-pace-numeric) 2.0) goal-5k-pace-numeric))
+         (tempo-run-pace (/ (+ goal-full-pace-numeric goal-half-pace-numeric) 2.0))
+         ;; steady pace, based on 5k
+         ;; TODO: upper lower
+         (steady-run-multiplier 1.286)
+         (steady-run-pace (* steady-run-multiplier goal-5k-pace-numeric))
+         ;; easy pace, based on 5k
+         ;; TODO: upper lower
+         (easy-run-multiplier 1.42)
+         (easy-run-pace (* easy-run-multiplier goal-5k-pace-numeric)))
+    ;; multiply out for goal paces
+    (dolist (row (nthcdr 2 lisp-table-no-seperators))
+      (let* ((current-goal-5k-pace-numeric   (otlb-gps-string-pace-numeric (elt row 0) "5"))
+             (current-goal-pace-multiplier (/ current-goal-5k-pace-numeric goal-5k-pace-numeric))
+             (current-goal-10k-pace-numeric  (* current-goal-pace-multiplier goal-10k-pace-numeric))
+             (current-goal-half-pace-numeric (* current-goal-pace-multiplier goal-half-pace-numeric))
+             (current-goal-full-pace-numeric (* current-goal-pace-multiplier goal-full-pace-numeric)))
+        ;; 10k
+        (setcar (nthcdr 2 row) (otlb-gps-minutes-to-string (* 10.0 current-goal-10k-pace-numeric)))
+        ;; half
+        (setcar (nthcdr 4 row) (otlb-gps-minutes-to-string (* half-marathon-distance current-goal-half-pace-numeric)))
+        ;; full
+        (setcar (nthcdr 6 row) (otlb-gps-minutes-to-string (* marathon-distance current-goal-full-pace-numeric)))))
+    (dolist (row (nthcdr 1 lisp-table-no-seperators))
+      (let* ((current-goal-5k-pace-numeric   (otlb-gps-string-pace-numeric (elt row 0) "5"))
+             (current-goal-pace-multiplier   (/ current-goal-5k-pace-numeric goal-5k-pace-numeric))
+             (current-goal-10k-pace-numeric  (* current-goal-pace-multiplier goal-10k-pace-numeric))
+             (current-goal-half-pace-numeric (* current-goal-pace-multiplier goal-half-pace-numeric))
+             (current-goal-full-pace-numeric (* current-goal-pace-multiplier goal-full-pace-numeric)))
+        ;; now fill in second row of table
+        (setcar (nthcdr 1 row) (otlb-gps-pace-to-string         current-goal-5k-pace-numeric t))
+        (setcar (nthcdr 3 row) (concat (otlb-gps-pace-to-string current-goal-10k-pace-numeric t)  " (" (format "%.4f" goal-10k-multiplier) "x5k)"))
+        (setcar (nthcdr 5 row) (concat (otlb-gps-pace-to-string current-goal-half-pace-numeric t) " (" (format "%.4f" goal-half-multiplier) "x5k)"))
+        (setcar (nthcdr 7 row) (concat (otlb-gps-pace-to-string current-goal-full-pace-numeric t) " (" (format "%.4f" goal-full-multiplier) "x5k)"))
+        (setcar (nthcdr 8 row) (concat (otlb-gps-minutes-to-string (* current-goal-pace-multiplier repetition-short-pace-track-200m))  "," (otlb-gps-minutes-to-string (* current-goal-pace-multiplier repetition-short-pace-track-300m)) "," (otlb-gps-minutes-to-string (* current-goal-pace-multiplier repetition-short-pace-track-400m)) " (" (otlb-gps-pace-to-string (* current-goal-pace-multiplier repetition-short-pace) t) ", " (otlb-gps-minutes-to-string (* current-goal-pace-multiplier repetition-short-pace-track-200m)) "/200m, " (format "%.4f" repetition-short-multiplier) "x5k)"))
+        (setcar (nthcdr 9 row) (concat (otlb-gps-minutes-to-string (* current-goal-pace-multiplier repetition-long-pace-track-600m))  "," (otlb-gps-minutes-to-string (* current-goal-pace-multiplier repetition-long-pace-track-800m)) "," (otlb-gps-minutes-to-string (* current-goal-pace-multiplier repetition-long-pace-track-1000m)) " (" (otlb-gps-pace-to-string (* current-goal-pace-multiplier repetition-long-pace) t) ", " (otlb-gps-minutes-to-string (* current-goal-pace-multiplier repetition-long-pace-track-200m)) "/200m, " (format "%.4f" repetition-long-multiplier) "x5k)"))
+        (setcar (nthcdr 10 row) (concat (otlb-gps-minutes-to-string (* current-goal-pace-multiplier interval-pace-lower)) " min/k - " (otlb-gps-minutes-to-string (* current-goal-pace-multiplier interval-pace-upper)) " min/k (1.0-1.05x5k)"))
+        (setcar (nthcdr 11 row) (concat (otlb-gps-pace-to-string (* current-goal-pace-multiplier interval-threshold-pace) t) " (" (format "%.4f" interval-threshold-multiplier) "x5k)"))
+        (setcar (nthcdr 12 row) (concat (otlb-gps-pace-to-string (* current-goal-pace-multiplier tempo-run-pace) t) " (" (format "%.4f" tempo-run-multiplier) "x5k)"))
+        (setcar (nthcdr 13 row) (concat (otlb-gps-pace-to-string (* current-goal-pace-multiplier steady-run-pace) t) " (" (format "%.4f" steady-run-multiplier) "x5k)"))
+        (setcar (nthcdr 14 row) (concat (otlb-gps-pace-to-string (* current-goal-pace-multiplier easy-run-pace) t) " (" (format "%.4f" easy-run-multiplier) "x5k)"))))
+    lisp-table-no-seperators))
+
+(defun tblel-hill-table (lisp-table)
+  (let ((row-count 0))
+    (dolist (row lisp-table)
+      (unless (= row-count 0)
+        ;; TODO: figure out a good multiplier based on energy cost
+        (let* ((equiv-flat-distance-multiple 4.0)
+               (hill-length         (string-to-float (elt row 1)))
+               (start-elevation     (string-to-float (elt row 2)))
+               (end-elevation       (string-to-float (elt row 3)))
+               (total-elevation     (- end-elevation start-elevation))
+               (grade               (* 100.0 (/ total-elevation hill-length)))
+               (equiv-flat-distance (+ hill-length (* equiv-flat-distance-multiple total-elevation)))
+               (equiv-4        (* 240.0  (/ equiv-flat-distance 1000.0)))
+               (equiv-4-pace   (otlb-gps-pace-to-string (/ (/ equiv-4 (/ hill-length 1000.0)) 60.0)))
+               (equiv-345      (* 225.0  (/ equiv-flat-distance 1000.0)))
+               (equiv-345-pace (otlb-gps-pace-to-string (/ (/ equiv-345 (/ hill-length 1000.0)) 60.0)))
+               (equiv-330      (* 210.0  (/ equiv-flat-distance 1000.0)))
+               (equiv-330-pace (otlb-gps-pace-to-string (/ (/ equiv-330 (/ hill-length 1000.0)) 60.0)))
+               (equiv-315      (* 195.0  (/ equiv-flat-distance 1000.0)))
+               (equiv-315-pace (otlb-gps-pace-to-string (/ (/ equiv-315 (/ hill-length 1000.0)) 60.0)))
+               (equiv-300      (* 180.0  (/ equiv-flat-distance 1000.0)))
+               (equiv-300-pace (otlb-gps-pace-to-string (/ (/ equiv-300 (/ hill-length 1000.0)) 60.0)))
+               (equiv-245      (* 165.0  (/ equiv-flat-distance 1000.0)))
+               (equiv-245-pace (otlb-gps-pace-to-string (/ (/ equiv-245 (/ hill-length 1000.0)) 60.0)))
+               (equiv-230      (* 150.0  (/ equiv-flat-distance 1000.0)))
+               (equiv-230-pace (otlb-gps-pace-to-string (/ (/ equiv-230 (/ hill-length 1000.0)) 60.0))))
+          (setcar (nthcdr 4 row)  (format "%.2f" total-elevation))
+          (setcar (nthcdr 5 row)  (format "%.2f" grade))
+          (setcar (nthcdr 6 row)  (format "%.2f" equiv-flat-distance))
+          (setcar (nthcdr 7 row)  (format "%.2f" equiv-4))
+          (setcar (nthcdr 8 row)  equiv-4-pace)
+          (setcar (nthcdr 9 row)  (format "%.2f" equiv-345))
+          (setcar (nthcdr 10 row) equiv-345-pace)
+          (setcar (nthcdr 11 row) (format "%.2f" equiv-330))
+          (setcar (nthcdr 12 row) equiv-330-pace)
+          (setcar (nthcdr 13 row) (format "%.2f" equiv-315))
+          (setcar (nthcdr 14 row) equiv-315-pace)
+          (setcar (nthcdr 15 row) (format "%.2f" equiv-300))
+          (setcar (nthcdr 16 row) equiv-300-pace)
+          (setcar (nthcdr 17 row) (format "%.2f" equiv-245))
+          (setcar (nthcdr 18 row) equiv-245-pace)
+          (setcar (nthcdr 19 row) (format "%.2f" equiv-230))
+          (setcar (nthcdr 20 row) equiv-230-pace)))
+      (setq row-count (+ 1 row-count)))
+    lisp-table))
 
 (provide 'otlb-gps)

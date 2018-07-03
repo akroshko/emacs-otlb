@@ -11,7 +11,7 @@
 # Author: Andrew Kroshko
 # Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 # Created: Fri Mar 27, 2015
-# Version: 20180516
+# Version: 20180703
 # URL: https://github.com/akroshko/emacs-otlb
 #
 # This program is free software: you can redistribute it and/or modify
@@ -36,7 +36,8 @@
 #
 # See the included README.md file for more information.
 
-USAGE="Usage: fetch-garmin-310 [--reset] [--download] [--process] [--no-process]
+USAGE="Usage: fetch-garmin-310 [--help] [--reset] [--download] [--process] [--no-process]
+  --help       Display this messange and exit.
   --reset      Reset the authorization, required because after some time the
                download stops working if not reset.
   --download   Download files from watch to machine.
@@ -46,12 +47,15 @@ USAGE="Usage: fetch-garmin-310 [--reset] [--download] [--process] [--no-process]
 
 export GARMIN310CACHE="$HOME"/tmp/cache-garmin-310.txt
 export FITDIRECTORY="$ANTCONFIG"/activities
+export OSMCARTODIRECTORY="$HOME"/cic-var/openstreetmap-data/openstreetmap-carto
 
+# TODO: this needs to be a more general function
 get-otlb-source () {
     # https://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in
     SOURCE="${BASH_SOURCE[0]}"
     while [[ -h "$SOURCE" ]]; do # resolve $SOURCE until the file is no longer a symlink
         DIRNAMESOURCE=$(dirname "$SOURCE")
+        # TODO: is this redundant
         local DIR=$(cd -P "$DIRNAMESOURCE" && pwd)
         local SOURCE=$(readlink "$SOURCE")
         [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
@@ -71,6 +75,7 @@ cache-garmin-310-full () {
 }
 
 # TODO: this whole cache thing should be in python
+# TODO: think this is non-function right now
 cache-garmin-310-add () {
     # add missing files to cache
     if [[ -e "$GARMIN310CACHE" ]];then
@@ -85,7 +90,6 @@ cache-garmin-310-add () {
             # check if each fitfile is in cache, make this as easy as possible
             # TODO: should already be normalized
             FITFILE="${FITFILES[$i]}"
-            echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
             # TODO: I hope this grep is robust enough
             if grep -- "${FITFILES[$i]}" "$GARMIN310CACHE" >/dev/null 2>&1; then
                 msg "Found ${FITFILES[$i]}!!!"
@@ -93,7 +97,6 @@ cache-garmin-310-add () {
                 ORPHANS+="${FITFILES[$i]}"
                 warn "Not found for ${FITFILES[$i]}!!!"
             fi
-            echo "--------------------"
         done
         IFS=$OLDIFS
         echo "${ORPHANS[@]}"
@@ -126,7 +129,7 @@ fetch-garmin-310 () {
         local TCXDIRECTORY="$OTLBLOGS"/"$DEVICENAME"
         local TCXDIRECTORYOLDER="$OTLBLOGSOLDER"/"$DEVICENAME"
         # there's probably a better way of dealing with arguments
-        if [[ -z "$1" ]]; then
+        if [[ -z "$1" || "$1" == "--help" ]]; then
             echo "$USAGE"
             return 0;
         fi
@@ -250,7 +253,7 @@ get-id-tcx () {
     # TODO: should I get rid of the xmlstarlet and just use Python for everything
     local OTLBSOURCE="$(get-otlb-source)"
     # get a timestamp from first track
-    local XMLID=`xmlstarlet sel -t -v "//*[local-name() = 'Id']" -n "$1"`
+    local XMLID=$(xmlstarlet sel -t -v "//*[local-name() = 'Id']" -n "$1")
     if [[ -z "$XMLID" ]]; then
         return 1
     fi
@@ -266,7 +269,7 @@ get-id-gpx () {
     # TODO: should I get rid of the xmlstarlet and just use Python for everything
     local OTLBSOURCE="$(get-otlb-source)"
     # get a timestamp from first track
-    local XMLID=`xmlstarlet sel -t -v "//*[local-name() = 'metadata']/*[local-name() = 'time']" -n "$1"`
+    local XMLID=$(xmlstarlet sel -t -v "//*[local-name() = 'metadata']/*[local-name() = 'time']" -n "$1")
     local XMLID=${XMLID//-/}
     local XMLID=${XMLID//:/}
     echo $(python "$OTLBSOURCE"/read_files.py "$XMLID" --utc)
@@ -277,14 +280,13 @@ create-osm-maps () {
     # meant to run in current directory
     for f in ${PWD}/*; do
         # yes, avoid existing ones
-        if [[ "${f}" =~ -1280.png ]]; then
-            continue
-        fi
+        [[ "${f}" =~ -1280.png ]] && continue
         if [[ ! -e ${f%%.*}.png ]]; then
             echo "Creating map for $f"
             create-osm-map "$f"
         fi
         # create a smaller image for previewing
+        # TODO: have way to redo this
         if [[ ! -e ${f%%.*}-1280.png ]]; then
             echo "Creating x1280 map for $f"
             convert -geometry 1280x\> ${f%%.*}.png ${f%%.*}-1280.png
@@ -294,6 +296,7 @@ create-osm-maps () {
 
 create-osm-map () {
     local OTLBSOURCE="$(get-otlb-source)"
+    local ROUTEFILE="/tmp/otlb-gps-temp.gpx"
     # TODO: create a tmp working directory
     # TODO: needs a lost of work to avoid ~/osm silliness
     # TMPDIR=$(mktemp -d)
@@ -304,24 +307,30 @@ create-osm-map () {
     elif [[ ${1##*.} == "gpx" ]]; then
         local THEID="$(get-id-gpx $1)"
     else
+        yell "No ID can be diserned!"
         return 1
     fi
-    if [[ -e "/tmp/otlb-gps-temp.gpx" ]]; then
-        rm "/tmp/otlb-gps-temp.gpx"
-    fi
+    # TODO: safety
+    [[ -e "$ROUTEFILE" ]] && rm "$ROUTEFILE"
     # convert to gpx if not already gpx, otherwise just copy to tmp directory
+    # TODO: handle /temp files better
     if [[ ${1##*.} == "fit" ]]; then
-        gpsbabel -i garmin_fit -f "${1}" -o gpx -F "/tmp/otlb-gps-temp.gpx"
+        gpsbabel -i garmin_fit -f "${1}" -o gpx -F "${ROUTEFILE}"
     elif [[ ${1##*.} == "tcx" ]]; then
-        gpsbabel -i tcx -f "${1}" -o gpx -F "/tmp/otlb-gps-temp.gpx"
+        gpsbabel -i tcx -f "${1}" -o gpx -F "${ROUTEFILE}"
+    elif [[ ${1##*.} == "gpx" ]]; then
+        cp "${1}" "${ROUTEFILE}"
     else
-        cp "${1}" "/tmp/otlb-gps-temp.gpx"
+        yell "No appropriate file found for osm map!"
+        return 1
     fi
     # parse the raw osm file, add the appropriate route file, and add to the directory
     # put the output file where it belongs
-    # TODO: eventually just merge xml's
-    cp "$OTLBSOURCE/osm-route.xml" ~/osm/openstreetmap-carto/osm-route.xml
-    nik4.py --fit route-line --add-layers route-line,route-points --padding 100 -z 17 ~/osm/openstreetmap-carto/osm-route.xml "$(dirname $1)/${THEID}.png"
+    # TODO: eventually just merge xml's automatically
+    cp "$OTLBSOURCE/osm-route.xml" "${OSMCARTODIRECTORY}"/osm-route.xml
+    # --add-layers route-line,route-points
+    echo nik4.py --fit route-line --padding 100 -z 17 "${OSMCARTODIRECTORY}/osm-route.xml" "$(dirname $1)/${THEID}.png" --vars routefile="${ROUTEFILE}"
+    nik4.py --fit route-line --padding 100 -z 17 "${OSMCARTODIRECTORY}/osm-route.xml" "$(dirname $1)/${THEID}.png" --vars routefile="${ROUTEFILE}"
 }
 
 
@@ -345,19 +354,17 @@ fetch-garmin-305 () {
     # XXXX oh boy.... assuming garmin names have NO whitespace
     for f in $(find . -iname "*.gmn"); do
         [[ -e "$f" ]] || continue
-        if [[ ! -f ${f%.gmn}.tcx ]]; then
-            gmn2tcx "$f" > ${f%.gmn}.tcx
-        fi
+        [[ ! -f ${f%.gmn}.tcx ]] && gmn2tcx "$f" > ${f%.gmn}.tcx
     done
     popd >/dev/null
 }
 
 # old code, mytracks is gone, here as a useful reference only.
 # TODO: better naming of SAMSUNG_DEVICE
-SAMSUNG_INTERMEDIATEDIRECTORY="$OTLBLOGS"/"$SAMSUNG_DEVICENAME"-intermediate
-SAMSUNG_DIRECTORY="$OTLBLOGS"/"$SAMSUNG_DEVICENAME"
+ANDROID_INTERMEDIATEDIRECTORY="$OTLBLOGS"/"$SAMSUNG_DEVICENAME"-intermediate
+ANDROID_DIRECTORY="$OTLBLOGS"/"$SAMSUNG_DEVICENAME"
 
-convert-samsung-mytracks () {
+convert-android-mytracks () {
     # just convert the IDs for now, these are loaded directly in as
     # .tcx files
     #

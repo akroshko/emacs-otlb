@@ -3,7 +3,7 @@ otlb: org-table Logbook
 
 This package uses Emacs `org-mode` tables as an activity logbook,
 which incorporates data that has been downloaded from selected GPS
-devices (currently a Garmin 310 fitness watch and a Samsung Galaxy III
+devices (currently a Garmin 310 fitness watch and an LG G4 Android
 phone).
 
 Features include the ability to automatically track weather conditions
@@ -11,9 +11,9 @@ and mileage on footwear, as well as being able to edit the activity
 data as `org-mode` tables while still retaining the original copy.
 This package could be extended to other devices, as well as allowing
 the recorded data and information entered to be used for custom
-purposes by Emacs-lisp scripting.
+purposes by Emacs Lisp scripting.
 
-INFO: In the future I hope to include some sample data, but I decided
+TODO: In the future I hope to include some sample data, but I decided
 I wanted to release the package as-is as soon as possible.  Once I can
 gather an adequate set of sample-data that does not include any
 privacy-violating information I will include it.
@@ -23,7 +23,7 @@ Requirements and Installation
 
 This package requires a standard Emacs installation, of course. It has
 mostly been tested with the current Emacs package on *Debian Linux
-(Jessie) 8.2*. The packages required, given by a convenient install
+(Stretch) 9*. The packages required, given by a convenient install
 command are:
 
     sudo apt-get install git python-lxml xmlstarlet
@@ -46,14 +46,15 @@ which helps with installation of the Python tools for working with GPS
 devices and data.  The *Python* packages required can be installed
 directory from https://github.com using the commands in order:
 
-    pip install git+git://github.com/Tigge/openant.git
-    pip install git+git://github.com/Tigge/antfs-cli.git
+    pip install git+git://github.com/Tigge/openant.git git+git://github.com/Tigge/antfs-cli.git
 
 It has been found anything but the latest versions of the above
 *Python* packages do not work well.
 
-The GPS devices used so far are a Garmin 310XT and the Samsung Galaxy
-SIII smartphone with the
+TODO update app I use
+
+The GPS devices used so far are a Garmin 310XT and the LG G4 Android
+phone with the
 [RunnerUp](https://play.google.com/store/apps/details?id=org.runnerup&hl=en)
 application or any other that exports *gpx* or *tcx* files.
 
@@ -80,13 +81,24 @@ The directory given by `$ANTCONFIG` must be symlinked to
 
     ln -s ~/.config/antfs-cli $ANTCONFIG
 
-I keep `$OTLBLOGS` directory in my [Dropbox](https://www.dropbox.com)
-and have had no issues with using this package on both my desktop and
-laptop.  The appropriate value for the `$ANTID` variable can be found
-by the name of the new sub-directory in `$ANTCONFIG` corresponding to
-a 10 digit number after `antfs-cli` is run for the first time.  The
+The appropriate value for the `$ANTID` variable can be found by the
+name of the new sub-directory in `$ANTCONFIG` corresponding to a 10
+digit number after `antfs-cli` is run for the first time.  The
 `$ANTDEVICENAME` variable simply corresponds to a convenient unique
 name for the particular device.
+
+## Requirements to produce maps of activities
+
+Additional Debian 9 package requirements to installing making maps
+using OpenStreetMap data are:
+
+    sudo apt-get install osmctools postgis postgis-doc postgresql-9.6 postgresql-contrib postgresql-doc
+
+Additional *Python* packages are:
+
+    sudo pip install nik4
+
+TODO: instructions for installing the relevant packages
 
 Downloading data
 ================
@@ -105,31 +117,29 @@ the data run it as:
 
 The function `fetch-garmin-310` from
 [otlb-functions.sh](http://github.com/akroshko/emacs-otlb/otlb-functions.sh)
-converts the aforementioned `.fit` files into intermediate `.tcx`
-files in `$OTLBLOGS/garmin-310-$ANTID-intermediate/`, which are then
-amenable to further processing as XML files.  Using the date/time
-information contained within these intermediate files, they are
-renamed into a standard notation in the directory
-`$OTLBLOGS/garmin-310-$ANTID` for use from the Emacs part of this
-package.  The standard notation for the files, which comes from an old
-program used for the Garmin 305, is given by `<<YYYYMMDD>>T<<HHMMSS>>`
-and known as the *otlb id*; corresponding to the starting time for
-each activity and used to uniquely identify it.
+stores activities as either `.fit` files, `.gpx` files, or `.tcx`
+files.  Using the date/time information contained within these
+intermediate files they are named using a standard notation in the
+directory `$OTLBLOGS/garmin-310-$ANTID` for use from the Emacs part of
+this package.  The standard notation for the files, which comes from
+an old program used for the Garmin 305, is given by
+`<<YYYYMMDD>>T<<HHMMSS>>` and known as the *otlb id*; corresponding to
+the starting time for each activity and used to uniquely identify it.
 
-My Garmin 310 watch requires deleting the authorization key every day
-or two and this is done with:
+<!-- My Garmin 310 watch requires deleting the authorization key every day -->
+<!-- or two and this is done with: -->
 
-    fetch-garmin-310 --reset
+<!--     fetch-garmin-310 --reset -->
 
-Using otlb in Emacs
-===================
+Using the Emacs porition of emacs-otlb
+======================================
 
 TODO: this secontion need to be updated
 
 After following the basic installation, run Emacs with `emacs -q
 --load otlb-sample-init.el` to use the sample configuration.
 
-The `otlb-gps-find-pedestrian-location` (`s-j l`) key sequence is a
+The `otlb-gps-find-pedestrian-location` (`s-j l p`) key sequence is a
 shortcut to visit the file `$OTLBLOGS/pedestrian-log.org` in the
 current buffer.  While visiting this file in Emacs, the key sequence
 `otlb-gps-insert` (`s-l i`) will allow selection of a file from the
@@ -154,17 +164,17 @@ inserted with the key sequence `command otlb-gps-footwear` (`s-l w`).
 The `org-mode` tag indicating the sport can be toggled using the key
 sequence `otlb-gps-toggle` (`s-l t`).
 
-Weather conditions are added to the last entry by using the key
-sequence `otlb-gps-insert-conditions` (`s-l c`).  This currently looks
-up the temperature and wind based on Environment Canada data (by
-scraping the website using the script
-[scrape_weather_ec.py](http://github.com/akroshko/emacs-otlb/scrape_weather_ec.py)),
-although it could easily be modified for other websites.
+<!-- Weather conditions are added to the last entry by using the key -->
+<!-- sequence `otlb-gps-insert-conditions` (`s-l c`).  This currently looks -->
+<!-- up the temperature and wind based on Environment Canada data (by -->
+<!-- scraping the website using the script -->
+<!-- [scrape_weather_ec.py](http://github.com/akroshko/emacs-otlb/scrape_weather_ec.py)), -->
+<!-- although it could easily be modified for other websites. -->
 
 Using the key sequence `otlb-gps-insert` (`C-u s-l i`) with a prefix
 will allow selection of an uninserted file from the secondary device
-(the MyTracks application on a Samsung Galaxy SIII in this case),
-after which the procedure is the same as for the primary device.
+(the MyTracks application on an Android phone in this case), after
+which the procedure is the same as for the primary device.
 
 TODO: Not working yet.
 
@@ -243,7 +253,7 @@ crossing midnight Sunday or similar situations
   quicker select of logbook entries
 
 - is my wide usage of `list`, `elt`, and other functions hurting
-  anything?
+  performance?
 
 - can I reduce some of the hardcoding while not unnecessarily
   increasing code complexity?

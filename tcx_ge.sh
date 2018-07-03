@@ -33,6 +33,7 @@ main () {
     elif [[ "$1" == *.fit ]]; then
         gpsbabel -i garmin_fit -f "$1" -o kml -F "${TMPFILE}"
     fi
+    # TODO: change to google-chrome https://earth.google.com/web
     google-earth "${TMPFILE}"
 }
 main "$@"

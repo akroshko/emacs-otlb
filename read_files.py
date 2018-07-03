@@ -5,7 +5,7 @@
 # Author: Andrew Kroshko
 # Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 # Created: Sun May 1, 2016
-# Version: 20180516
+# Version: 20180703
 # URL: https://github.com/akroshko/emacs-otlb
 #
 # This program is free software: you can redistribute it and/or modify
@@ -56,10 +56,11 @@ import os
 import time
 from collections import namedtuple
 from pprint import pprint
-sys.path.append('/usr/local/lib/python2.7/site-packages')
-from fitparse import Activity, FitParseError
 from time import mktime
 import datetime
+# TODO: these should be better
+sys.path.append('/usr/local/lib/python2.7/site-packages')
+from fitparse import Activity, FitParseError
 
 LAP_TRIGGER_MAP = {\
     "manual":             "Manual", \
@@ -90,6 +91,61 @@ def local_date_to_utc(date):
     """Local date to UTC"""
     return datetime.datetime.utcfromtimestamp(mktime(date.timetuple()))
 
+def time_to_id(the_time):
+    return ("%04d" % the_time.year)+("%02d" % the_time.month)+("%02d" % the_time.day)+'T'+("%02d" % the_time.hour)+("%02d" % the_time.minute)+("%02d" % the_time.second)
+
+def main_utc(argv):
+    print id_to_utc(argv[1])
+
+def id_to_utc(theid):
+    YYYY=theid[0:4]
+    MM=theid[4:6]
+    DD=theid[6:8]
+    hh=theid[9:11]
+    mm=theid[11:13]
+    ss=theid[13:15]
+    # TODO: just adding 6 hours for now
+    dt=datetime.datetime(int(YYYY),int(MM),int(DD),int(hh),int(mm),int(ss))-datetime.timedelta(hours=6)
+    return "%04d%02d%02dT%02d%02d%02d" % (dt.year,dt.month,dt.day,dt.hour,dt.minute,dt.second)
+
+def id_difference(theid1,theid2):
+    YYYY1=theid1[0:4]
+    MM1=theid1[4:6]
+    DD1=theid1[6:8]
+    hh1=theid1[9:11]
+    mm1=theid1[11:13]
+    ss1=theid1[13:15]
+    YYYY2=theid2[0:4]
+    MM2=theid2[4:6]
+    DD2=theid2[6:8]
+    hh2=theid2[9:11]
+    mm2=theid2[11:13]
+    ss2=theid2[13:15]
+    dt=datetime.datetime(int(YYYY2),int(MM2),int(DD2),int(hh2),int(mm2),int(ss2)) - datetime.datetime(int(YYYY1),int(MM1),int(DD1),int(hh1),int(mm1),int(ss1))
+    # convert to seconds
+    return dt.seconds
+
+# from https://news.ycombinator.com/item?id=9282102
+# TODO: want something slightly better, maybe import geopy
+def haversine_distance(origin, destination):
+    """ Haversine formula to calculate the distance between two lat/long points on a sphere """
+    radius = 6371000 # FAA approved globe radius in km
+    dlat = math.radians(destination.lat-origin.lat)
+    dlon = math.radians(destination.lng-origin.lng)
+    a = math.sin(dlat/2) * math.sin(dlat/2) + math.cos(math.radians(origin.lat)) \
+        * math.cos(math.radians(destination.lat)) * math.sin(dlon/2) * math.sin(dlon/2)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    d = radius * c
+    # Return distance in km
+    return d
+
+def mps_minpkm(s):
+    # XXXX: 16.6666666666 is conversion from m/s to min/km
+    if s:
+        return 16.6666666666/s
+    else:
+        return None
+
 def main_fit(argv):
     filename=sys.argv[1]
     activity = Activity(filename)
@@ -109,11 +165,11 @@ def main_fit(argv):
         session_dict['pace']=0.0
     else:
         session_dict['pace']=(1000./(distance/timer_time))/60.
-    theid=("%04d" % start_time.year)+("%02d" % start_time.month)+("%02d" % start_time.day)+'T'+("%02d" % start_time.hour)+("%02d" % start_time.minute)+("%02d" % start_time.second)
+    theid=time_to_id(start_time)
     session_dict['id']=theid
     session_dict['start-time']=theid
     end_time=local_date_to_utc(session.get_data("timestamp"))
-    end_time_id=("%04d" % end_time.year)+("%02d" % end_time.month)+("%02d" % end_time.day)+'T'+("%02d" % end_time.hour)+("%02d" % end_time.minute)+("%02d" % end_time.second)
+    end_time_id=time_to_id(end_time)
     session_dict['end-time']=end_time_id
     session_dict['laps']={}
     session_dict['laps']['start-time']=[]
@@ -185,13 +241,6 @@ def main_fit(argv):
     session_dict['end-latitude']=session_dict['laps']['trackpoints'][-1]['latitude']
     session_dict['end-longitude']=session_dict['laps']['trackpoints'][-1]['longitude']
     return session_dict
-
-def mps_minpkm(s):
-    # XXXX: 16.6666666666 is conversion from m/s to min/km
-    if s:
-        return 16.6666666666/s
-    else:
-        return None
 
 def main_graph_fitdistance(argv):
     # graph distance vs speed, distance vs altitude
@@ -358,10 +407,12 @@ def main_tcx(argv):
    # XXXX: make sure heart rate data exists
    tcx_dict['laps']['average-heart-rate'] = len(paces)*[None]
    tcx_dict['laps']['maximum-heart-rate'] = len(paces)*[None]
-   tcx_dict['start-latitude']=tcx.xpath("//*[local-name() = 'Lap']//*[local-name() = 'LatitudeDegrees']//text()")[0]
-   tcx_dict['start-longitude']=tcx.xpath("//*[local-name() = 'Lap']//*[local-name() = 'LongitudeDegrees']//text()")[0]
-   tcx_dict['end-latitude']=tcx.xpath("//*[local-name() = 'Lap']//*[local-name() = 'LatitudeDegrees']//text()")[-1]
-   tcx_dict['end-longitude']=tcx.xpath("//*[local-name() = 'Lap']//*[local-name() = 'LongitudeDegrees']//text()")[-1]
+   tcx_xpath_latitude =tcx.xpath("//*[local-name() = 'Lap']//*[local-name() = 'LatitudeDegrees']//text()")
+   tcx_xpath_longitude=tcx.xpath("//*[local-name() = 'Lap']//*[local-name() = 'LongitudeDegrees']//text()")
+   tcx_dict['start-latitude']=tcx_xpath_latitude[0]
+   tcx_dict['start-longitude']=tcx_xpath_longitude[0]
+   tcx_dict['end-latitude']=tcx_xpath_latitude[-1]
+   tcx_dict['end-longitude']=tcx_xpath_longitude[-1]
    # TODO: check this
    tcx_dict['timer-time']=0.
    for t in tcx_dict['laps']['timer-time']:
@@ -446,51 +497,6 @@ def main_gpx(argv):
     gpx_dict['distance']=total_distance
     gpx_dict['pace']=(1000./(gpx_dict['distance']/gpx_dict['timer-time']))/60.
     return gpx_dict
-
-def main_utc(argv):
-    print id_to_utc(argv[1])
-
-def id_to_utc(theid):
-    YYYY=theid[0:4]
-    MM=theid[4:6]
-    DD=theid[6:8]
-    hh=theid[9:11]
-    mm=theid[11:13]
-    ss=theid[13:15]
-    # TODO: just adding 6 hours for now
-    dt=datetime.datetime(int(YYYY),int(MM),int(DD),int(hh),int(mm),int(ss))-datetime.timedelta(hours=6)
-    return "%04d%02d%02dT%02d%02d%02d" % (dt.year,dt.month,dt.day,dt.hour,dt.minute,dt.second)
-
-def id_difference(theid1,theid2):
-    YYYY1=theid1[0:4]
-    MM1=theid1[4:6]
-    DD1=theid1[6:8]
-    hh1=theid1[9:11]
-    mm1=theid1[11:13]
-    ss1=theid1[13:15]
-    YYYY2=theid2[0:4]
-    MM2=theid2[4:6]
-    DD2=theid2[6:8]
-    hh2=theid2[9:11]
-    mm2=theid2[11:13]
-    ss2=theid2[13:15]
-    dt=datetime.datetime(int(YYYY2),int(MM2),int(DD2),int(hh2),int(mm2),int(ss2)) - datetime.datetime(int(YYYY1),int(MM1),int(DD1),int(hh1),int(mm1),int(ss1))
-    # convert to seconds
-    return dt.seconds
-
-# from https://news.ycombinator.com/item?id=9282102
-# TODO: want something slightly better, maybe import geopy
-def haversine_distance(origin, destination):
-    """ Haversine formula to calculate the distance between two lat/long points on a sphere """
-    radius = 6371000 # FAA approved globe radius in km
-    dlat = math.radians(destination.lat-origin.lat)
-    dlon = math.radians(destination.lng-origin.lng)
-    a = math.sin(dlat/2) * math.sin(dlat/2) + math.cos(math.radians(origin.lat)) \
-        * math.cos(math.radians(destination.lat)) * math.sin(dlon/2) * math.sin(dlon/2)
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-    d = radius * c
-    # Return distance in km
-    return d
 
 if __name__ == "__main__":
     # TODO: detect filetype automatically
