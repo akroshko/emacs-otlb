@@ -91,7 +91,7 @@ cache-garmin-310-add () {
             # TODO: should already be normalized
             FITFILE="${FITFILES[$i]}"
             # TODO: I hope this grep is robust enough
-            if grep -- "${FITFILES[$i]}" "$GARMIN310CACHE" >/dev/null 2>&1; then
+            if grep -- "${FITFILES[$i]}" "$GARMIN310CACHE" &>/dev/null; then
                 msg "Found ${FITFILES[$i]}!!!"
             else
                 ORPHANS+="${FITFILES[$i]}"
