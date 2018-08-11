@@ -115,7 +115,6 @@ fetch-garmin-310-reset-download () {
 # FITDIRECTORY="$ANTCONFIG"/activities;OTLBSOURCE="$(get-otlb-source)";time python "$OTLBSOURCE"/read_files.py "$FITDIRECTORY" --fit-id
 # TODO: cache if not exist... or if stale or corrupt...
 fetch-garmin-310 () {
-    h2
     time {
         if [[ $@ == *"--dry-run"* ]]; then
             local DRYRUN="T"
@@ -133,6 +132,7 @@ fetch-garmin-310 () {
             echo "$USAGE"
             return 0;
         fi
+        h2
         # XXXX this seems to be necessary about once a day, but hangs if I do it every time
         if [[ $@ == *"--reset"* ]]; then
             [[ -e "$ANTCONFIG"/authfile ]] && rm "$ANTCONFIG"/authfile
