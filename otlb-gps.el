@@ -6,8 +6,8 @@
 ;;
 ;; Author: Andrew Kroshko
 ;; Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
-;; Created: Sun Apr  5, 2015
-;; Version: 20180703
+;; Created: Sun Apr 5, 2015
+;; Version: 20180811
 ;; URL: https://github.com/akroshko/emacs-otlb
 ;;
 ;; This program is free software; you can redistribute it and/or
@@ -279,7 +279,7 @@ the primary device, generally used before an interactive command."
   ;; otlb-gps-file-ids reset
   (setq otlb-gps-file-ids nil)
   (dolist (otlb-gps-location otlb-gps-locations)
-    (setq otlb-gps-file-ids (append otlb-gps-file-ids (otlb-gps-file-ids otlb-gps-location))))
+    (setq otlb-gps-file-ids (nconc otlb-gps-file-ids (otlb-gps-file-ids otlb-gps-location))))
   (otlb-gps-log-ids))
 
 ;; (defun otlb-gps-refresh-secondary ()
@@ -800,19 +800,18 @@ TODO: create buffer for looking at raw data?
 (defun otlb-gps-select-shoes (&optional header-message)
   "Interactively select the shoes worn based on current
 footwear."
-  (with-current-file otlb-gps-footwear-current
-    (goto-char (point-min))
+  (with-current-file-min otlb-gps-footwear-current
     ;; advance to table
     (cic:org-find-table)
     (let* ((table-lisp (cic:org-table-to-lisp-no-separators))
-           (pairs (delq nil (mapcar (lambda (e)
-                                      (when (string= (s-trim-full (elt e 9)) "")
-                                        (list (elt e 7)
-                                              (elt e 8)
-                                              (elt e 0)
-                                              (elt e 1)
-                                              (elt e 3))))
-                                    (cdr table-lisp)))))
+           (pairs (remove-if-not (lambda (e)
+                                   (when (string= (s-trim-full (elt e 9)) "")
+                                     (list (elt e 7)
+                                           (elt e 8)
+                                           (elt e 0)
+                                           (elt e 1)
+                                           (elt e 3))))
+                                 (cdr table-lisp))))
       ;; select the results
       (cic:select-list-item (mapcar (lambda (e) (mapconcat 'identity e " "))
                                     pairs)
@@ -1056,7 +1055,7 @@ meters."
         ;; replace instances of current-tag with one at next-index
         (setq new-tags (cl-subst (elt otlb-gps-taglist next-index) current-tag current-tags :test 'equal))
         ;; delete tags and replace them
-        (when (search-forward-regexp ":[[:alnum:]:]*:$" nil t)
+        (when (re-search-forward ":[[:alnum:]:]*:$" nil t)
           (replace-match (concat ":" (mapconcat 'identity new-tags ":") ":")))))
     t))
 
@@ -1092,7 +1091,7 @@ entry."
               (elt otlb-gps-taglist found-index))
       (setq next-index (mod (1+ found-index) (length otlb-gps-taglist)))
       (setq new-taglist (append current-tags (elt otlb-gps-taglist next-index)))
-      (when (search-forward-regexp ":[[:alnum:]:]*:$"  nil t)
+      (when (re-search-forward ":[[:alnum:]:]*:$"  nil t)
         (replace-match (concat ":" (mapconcat 'identity new-taglist ":") ":"))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1143,7 +1142,7 @@ START-ID."
                                                       (list 'total (list nil "0.000km" "0:00")))))
 
 (defun otlb-gps-sum-totals (total1 total2)
-  "Sum distance and duration totals from TOTAL1 and TOTAL2.."
+  "Sum distance and duration totals from TOTAL1 and TOTAL2."
   ;; assume this comes out as ID, distance, time
   ;; TODO: modify to sum an alist
   (cond (t
@@ -1157,27 +1156,26 @@ START-ID."
                      (assq key total1)
                      (not (assq key total2)))
                     ;; if key is only in lst1
-                    (setq total-list (append
-                                      total-list
-                                      (list (assoc key total1)))))
+                    (setq total-list (cons
+                                      (assoc key total1)
+                                      total-list)))
                    ((and
                      (not (assq key total1))
                      (assq key total2))
                     ;; if key is only in lst2
-                    (setq total-list (append
-                                      total-list
-                                      (list (assoc key total2)))))
+                    (setq total-list (cons
+                                      (assoc key total2)
+                                      total-list)))
                    (t
                     (let* ((lst1 (cadr (assq key total1)))
                            (lst2 (cadr (assq key total2))))
-                      (setq total-list (append total-list
-                                               (list
-                                                (list key
-                                                      (list
-                                                       (append (nth 0 lst2) (nth 0 lst1))
-                                                       (otlb-gps-string-sum-distances (list (nth 1 lst2) (nth 1 lst1)))
-                                                       (otlb-gps-string-sum-durations (list (nth 2 lst2) (nth 2 lst1))))))))))))
-           total-list))))
+                      (setq total-list (cons (list key
+                                                   (list
+                                                    (append (nth 0 lst2) (nth 0 lst1))
+                                                    (otlb-gps-string-sum-distances (list (nth 1 lst2) (nth 1 lst1)))
+                                                    (otlb-gps-string-sum-durations (list (nth 2 lst2) (nth 2 lst1)))))
+                                             total-list))))))
+           (nreverse total-list)))))
 
 (defun otlb-gps-totals (start-id end-id)
   "Get totals between START-ID and END-ID."
@@ -1266,26 +1264,24 @@ start time."
                            (progn
                              (otlb-gps-find-actual-table-last-row)
                              (list (org-table-get nil 6) (org-table-get nil 2)))))
-    (setq ids (delq nil (mapcar (lambda (e)
-                                  (let ((shoe-id (ignore-errors (substring-no-properties (s-trim-full (cadr (split-string (car e)))))))
-                                        (kms (ignore-errors (cadr e))))
-                                    (when (and (cic:is-not-empty-string-nil shoe-id) kms)
-                                      (list shoe-id kms))))
-                                gathered)))
+    (setq ids (remove-if-not (lambda (e)
+                               (let ((shoe-id (ignore-errors (substring-no-properties (s-trim-full (cadr (split-string (car e)))))))
+                                     (kms (ignore-errors (cadr e))))
+                                 (when (and (cic:is-not-empty-string-nil shoe-id) kms)
+                                   (list shoe-id kms))))
+                             gathered))
     (dolist (id ids)
       (let ((current-sum (assoc (car id) sums)))
         (if current-sum
-            (progn
-              (setcdr current-sum (cons
-                                   (+ (cadr current-sum)
-                                      (string-to-number (cadr id)))
-                                   nil)))
-          (progn
-            (setq sums (append sums (list
-                                     (list
-                                      (car id)
-                                      (string-to-number (cadr id))))))))))
-    sums))
+            (setcdr current-sum (cons
+                                 (+ (cadr current-sum)
+                                    (string-to-number (cadr id)))
+                                 nil))
+          (setq sums (cons (list
+                            (car id)
+                            (string-to-number (cadr id)))
+                           sums)))))
+    (nreverse sums)))
 
 (defun otlb-gps-insert-shoe-totals ()
   "Insert the shoe totals into the file containing them."
@@ -1424,8 +1420,7 @@ sorted."
 (defun otlb-gps-get-last-id ()
   "Get the least recent ID in the logbook.  Assumes logbook is
 sorted."
-  (with-current-file otlb-gps-pedestrian-location
-    (goto-char (point-max))
+  (with-current-file-max otlb-gps-pedestrian-location
     (org-back-to-heading)
     (otlb-gps-get-id-from-heading)))
 
@@ -1555,7 +1550,7 @@ sorted."
   org-forward-heading-same-level."
   ;; TODO: use known tags but without any complications that could kill performance
   (end-of-line)
-  (search-forward-regexp "^* .*:.*:.*:.*:")
+  (re-search-forward "^* .*:.*:.*:.*:")
   (beginning-of-line))
 
 (defun otlb-gps-id-capture-insert ()
@@ -1712,7 +1707,7 @@ END-ID."
        (setq ,accum nil)
        (while keep-going
          ;; is another heading to find
-         (setq keep-going (search-forward-regexp "^\* .*" nil t))
+         (setq keep-going (re-search-forward "^\* .*" nil t))
          (when keep-going
            ;; is it a GPS entry
            (let ((current-id (condition-case nil (otlb-gps-get-id-from-heading) (error nil))))

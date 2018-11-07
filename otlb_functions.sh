@@ -162,7 +162,7 @@ fetch-garmin-310 () {
                 IFS=$'\n'
                 for THEFIT in $THECACHEDFITS; do
                     # TODO: command and append at each loop stupidly inefficient, but at only 3 seconds....
-                    local CACHEDFILE=$(echo "$THEFIT" | cut -d' ' -f1)
+                    local CACHEDFILE=$(cut -d' ' -f1 <<< "$THEFIT")
                     THECACHEDFILES="$THECACHEDFILES $CACHEDFILE"
                 done
                 IFS=$OLDIFS
@@ -191,8 +191,8 @@ fetch-garmin-310 () {
                 # TODO: can only use subshell here because I am not
                 (IFS=$'\n'
                  for THEMISSINGFIT in $THEMISSINGFITS; do
-                     local THEORIGINALFIT=$(echo "$THEMISSINGFIT" | cut -d' ' -f1)
-                     local THEID=$(echo "$THEMISSINGFIT" | cut -d' ' -f2)
+                     local THEORIGINALFIT=$(cut -d' ' -f1 <<< "$THEMISSINGFIT")
+                     local THEID=$(cut -d' ' -f2 <<< "$THEMISSINGFIT")
                      if [[ ! -e "${TCXDIRECTORY}/${THEID}.tcx" && ! -e "${TCXDIRECTORY}/${THEID}.fit" && ! -e "${TCXDIRECTORYOLDER}/${THEID}.tcx" && ! -e "${TCXDIRECTORYOLDER}/${THEID}.fit" ]]; then
                          echo "Missing $THEID! Copying!"
                          if [[ ! -e "${THEORIGINALFIT}" ]]; then
