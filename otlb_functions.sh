@@ -45,9 +45,9 @@ USAGE="Usage: fetch-garmin-310 [--help] [--reset] [--download] [--process] [--no
   --no-process Do not process the files into form ready for import in otlb, even if download successful.
 "
 
-export GARMIN310CACHE="$HOME"/tmp/cache-garmin-310.txt
-export FITDIRECTORY="$ANTCONFIG"/activities
-export OSMCARTODIRECTORY="$HOME"/cic-var/openstreetmap-data/openstreetmap-carto
+export GARMIN310CACHE="$HOME/tmp/cache-garmin-310.txt"
+export FITDIRECTORY="$ANTCONFIG/activities"
+export OSMCARTODIRECTORY="$HOME/cic-var/openstreetmap-data/openstreetmap-carto"
 
 # TODO: this needs to be a more general function
 get-otlb-source () {
@@ -70,7 +70,7 @@ get-otlb-source () {
 cache-garmin-310-full () {
     OTLBSOURCE="$(get-otlb-source)"
     THEIDS=$(python "$OTLBSOURCE"/read_files.py "$FITDIRECTORY" --fit-id)
-    mkdir -p "$HOME"/tmp
+    mkdir -p "$HOME/tmp"
     echo "$THEIDS" > "$GARMIN310CACHE"
 }
 
