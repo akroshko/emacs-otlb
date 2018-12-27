@@ -103,27 +103,25 @@
     ;; deal with fractions
     (when (string-match "[0-9.]" value)
       (if (string-match "/" value)
-          (progn
-            (let ((space-split (split-string value " "))
-                  (slash-part nil)
-                  (slash-split nil)
-                  first
-                  second)
-              ;; find the part with the slash
-              (dolist (part space-split)
-                (when (or (not slash-part) (string-match "/" part))
-                  (when first
-                    (setq second t))
-                  (unless second
-                    (setq first t))
-                  (setq slash-part part)))
-              (setq slash-split (split-string slash-part "/"))
-              (if second
-                  (+ (string-to-float (elt space-split 0)) (/ (string-to-float (elt slash-split 0))
-                                                              (string-to-float (elt slash-split 1))))
-                (/ (string-to-float (elt slash-split 0))
-                   (string-to-float (elt slash-split 1))))))
-        (progn
-          (string-to-float value))))))
+          (let ((space-split (split-string value " "))
+                (slash-part nil)
+                (slash-split nil)
+                first
+                second)
+            ;; find the part with the slash
+            (dolist (part space-split)
+              (when (or (not slash-part) (string-match "/" part))
+                (when first
+                  (setq second t))
+                (unless second
+                  (setq first t))
+                (setq slash-part part)))
+            (setq slash-split (split-string slash-part "/"))
+            (if second
+                (+ (string-to-float (elt space-split 0)) (/ (string-to-float (elt slash-split 0))
+                                                            (string-to-float (elt slash-split 1))))
+              (/ (string-to-float (elt slash-split 0))
+                 (string-to-float (elt slash-split 1)))))
+        (string-to-float value)))))
 
 (provide 'otlb-sample-config)

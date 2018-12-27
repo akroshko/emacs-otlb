@@ -68,7 +68,7 @@ get-otlb-source () {
 #       this still may be too costly, maybe have a full cron every day
 #       and update based on missing
 cache-garmin-310-full () {
-    OTLBSOURCE="$(get-otlb-source)"
+    OTLBSOURCE=$(get-otlb-source)
     THEIDS=$(python "$OTLBSOURCE"/read_files.py "$FITDIRECTORY" --fit-id)
     mkdir -p "$HOME/tmp"
     echo "$THEIDS" > "$GARMIN310CACHE"
@@ -148,7 +148,7 @@ fetch-garmin-310 () {
             if [[ "$DOWNLOAD_SUCCESSFUL" == 0 ]]; then
                 echo "Download successful!!!"
             fi
-            local OTLBSOURCE="$(get-otlb-source)"
+            local OTLBSOURCE=$(get-otlb-source)
             pushd . >/dev/null
             cd "$OTLBLOGS"
             h2
@@ -228,13 +228,13 @@ convert-aux-devices () {
         if [[ ${f##*.} == "tcx" ]]; then
             if [[ ! -e "$OTLBAUX"/$(basename $f) ]]; then
                 # TODO: in case of failure
-                local THEID="$(get-id-tcx $f)" || continue
+                local THEID=$(get-id-tcx $f) || continue
                 cp "$f" "$OTLBAUX"/"$THEID".tcx
             fi
         elif [[ ${f##*.} == "gpx" ]]; then
             if [[ ! -e "$OTLBAUX"/$(basename $f) ]]; then
                 # TODO: in case of failure
-                local THEID="$(get-id-gpx $f)" || continue
+                local THEID=$(get-id-gpx $f) || continue
                 cp "$f" "$OTLBAUX"/"$THEID".gpx
             fi
         fi
@@ -242,7 +242,7 @@ convert-aux-devices () {
 }
 
 get-id-fit () {
-    local OTLBSOURCE="$(get-otlb-source)"
+    local OTLBSOURCE=$(get-otlb-source)
     local XMLID=$(python "$OTLBSOURCE"/read_files.py "$1" --fit-id)
     echo $XMLID
 }
@@ -251,7 +251,7 @@ get-id-fit () {
 get-id-tcx () {
     # get the id for a tcx file
     # TODO: should I get rid of the xmlstarlet and just use Python for everything
-    local OTLBSOURCE="$(get-otlb-source)"
+    local OTLBSOURCE=$(get-otlb-source)
     # get a timestamp from first track
     local XMLID=$(xmlstarlet sel -t -v "//*[local-name() = 'Id']" -n "$1")
     if [[ -z "$XMLID" ]]; then
@@ -267,7 +267,7 @@ get-id-tcx () {
 get-id-gpx () {
     # get the id for a gpx file
     # TODO: should I get rid of the xmlstarlet and just use Python for everything
-    local OTLBSOURCE="$(get-otlb-source)"
+    local OTLBSOURCE=$(get-otlb-source)
     # get a timestamp from first track
     local XMLID=$(xmlstarlet sel -t -v "//*[local-name() = 'metadata']/*[local-name() = 'time']" -n "$1")
     local XMLID=${XMLID//-/}
@@ -295,7 +295,7 @@ create-osm-maps () {
 }
 
 create-osm-map () {
-    local OTLBSOURCE="$(get-otlb-source)"
+    local OTLBSOURCE=$(get-otlb-source)
     local ROUTEFILE="/tmp/otlb-gps-temp.gpx"
     # TODO: create a tmp working directory
     # TODO: needs a lost of work to avoid ~/osm silliness
@@ -303,9 +303,9 @@ create-osm-map () {
     # get the id
     if [[ ${1##*.} == "fit" ]]; then
         # TODO: not working yet
-        local THEID="$(get-id-fit $1 | cut -d' ' -f2)"
+        local THEID=$(get-id-fit "$1" | cut -d' ' -f2)
     elif [[ ${1##*.} == "gpx" ]]; then
-        local THEID="$(get-id-gpx $1)"
+        local THEID=$(get-id-gpx "$1")
     else
         yell "No ID can be diserned!"
         return 1

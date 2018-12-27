@@ -124,6 +124,7 @@ in appropriate place."
     (define-key map (kbd "s-l s-L") 'otlb-gps-cycle-shift)
     ;; TODO: make sure this increments workouts
     (define-key map (kbd "H-j")     'otlb-gps-map-preview)
+    (define-key map (kbd "H-z")     'otlb-gps-map-preview)
     (define-key map (kbd "s-o o")   'otlb-gps-map-open)
     (define-key map (kbd "s-o s-o") 'otlb-gps-map-open)
     (define-key map (kbd "s-l m")   'otlb-gps-open-cached-osm)
@@ -562,6 +563,7 @@ well as filling in known information."
   (interactive) (otlb-gps-interactive)
   ;; TODO: configure command a little better
   ;; TODO: outdated because of no options too
+  (call-process "x11_save_focused_window.sh" nil nil nil)
   (start-process "terminal" nil "nohup" "rxvt-unicode" "-e" "bash" "-i" "-c" "(fetch-garmin-310);while read -r -t 0;do read -r; done;read -n 1 -s -r -p 'Press any key to continue...'"))
 
 ;; sort the entries by reverse date/time, bubble sort is nice when log
@@ -1305,6 +1307,7 @@ start time."
          ;; TODO: allow on secondary devices too
          (output-file (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".png")) (concat (car otlb-gps-locations) "/" id ".png"))))
     ;; open image with feh
+    (call-process "x11_save_focused_window.sh" nil nil nil)
     (start-process "feh otlb" nil "nohup" "feh-open-browse" output-file)))
 
 ;; TODO: all gps locations automatically
@@ -1320,6 +1323,7 @@ start time."
                           (and (file-exists-p (concat the-location "/" id ".gpx")) (concat the-location "/" id ".gpx")))))
     ;; run script to convert to gpx and open in Google Earth
     ;; TODO: change to google-chrome https://earth.google.com/web
+    (call-process "x11_save_focused_window.sh" nil nil nil)
     (start-process "google earth" nil "nohup" otlb-gps-map-command output-file)))
 
 (defun otlb-gps-map-preview ()
@@ -1349,6 +1353,7 @@ start time."
   (interactive)
   (let* ((id (otlb-gps-get-id))
          (the-location (otlb-gps-find-id-location id)))
+    (call-process "x11_save_focused_window.sh" nil nil nil)
     (start-process "feh map" "*otlb feh maps*" "feh" (concat the-location "/" id "-1280.png"))))
 
 (defun otlb-gps-graph-distance ()
@@ -1361,6 +1366,7 @@ start time."
                           (and (file-exists-p (concat the-location "/" id ".gpx")) (concat the-location "/" id ".gpx")))))
     ;; run script to graph it
     ;; TODO: want to record output here too
+    (call-process "x11_save_focused_window.sh" nil nil nil)
     (start-process "graph" "*graph output*" "nohup" "python" otlb-gps-graph-fit-command output-file "--graph-fit-distance")))
 
 (defun otlb-gps-graph-time ()
@@ -1373,6 +1379,7 @@ start time."
                           (and (file-exists-p (concat the-location "/" id ".gpx")) (concat the-location  "/" id ".gpx")))))
     ;; run script to graph it
     ;; TODO: want to record output here too
+    (call-process "x11_save_focused_window.sh" nil nil nil)
     (start-process "graph" "*graph output*" "nohup" "python" otlb-gps-graph-fit-command output-file "--graph-fit-time")))
 
 (defun otlb-gps-calc ( lisp-table lisp-table-no-seperators)
@@ -1429,13 +1436,12 @@ sorted."
   (interactive)
   (let ((capture-duration (read-string "Enter duration HHMMSS: ")))
     (if (string=  (substring capture-duration 0 2) "00")
-        (progn
-          (let ((duration (concat (substring capture-duration 2 4) ":" (substring capture-duration 4 6))))
-            ;; get rid of leading zeros
-            (if (substring duration 0 1)
-                (substring duration 1)
-              duration))
-          )
+        (let ((duration (concat (substring capture-duration 2 4) ":" (substring capture-duration 4 6))))
+          ;; get rid of leading zeros
+          (if (substring duration 0 1)
+              (substring duration 1)
+            duration))
+
       (let ((duration (concat (substring capture-duration 0 2) "h" (substring capture-duration 2 4) ":" (substring capture-duration 4 6))))
         ;; get rid of leading zeros
         (if (substring duration 0 1)
