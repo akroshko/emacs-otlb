@@ -427,11 +427,12 @@ def main_tcx(argv):
 
 def main_fit_id(argv):
     theids=[]
-    if os.path.isdir(argv[1]):
+    if os.path.isdir(argv[2]):
         fit_files=[os.path.join(argv[1],f) for f in os.listdir(sys.argv[1]) if f.endswith('.fit')]
     else:
-        fit_files=[argv[1]]
+        fit_files=argv[2:]
     for filename in fit_files:
+        sys.stderr.write("Getting ID for .fit file: "+filename+"\n")
         activity = Activity(filename)
         # TODO: this is the really time consuming one
         activity.parse()

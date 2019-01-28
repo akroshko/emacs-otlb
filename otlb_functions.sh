@@ -11,7 +11,7 @@
 # Author: Andrew Kroshko
 # Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 # Created: Fri Mar 27, 2015
-# Version: 20180703
+# Version: 20190108
 # URL: https://github.com/akroshko/emacs-otlb
 #
 # This program is free software: you can redistribute it and/or modify
@@ -68,8 +68,8 @@ get-otlb-source () {
 #       this still may be too costly, maybe have a full cron every day
 #       and update based on missing
 cache-garmin-310-full () {
-    OTLBSOURCE=$(get-otlb-source)
-    THEIDS=$(python "$OTLBSOURCE"/read_files.py "$FITDIRECTORY" --fit-id)
+    local OTLBSOURCE=$(get-otlb-source)
+    local THEIDS=$(python "$OTLBSOURCE"/read_files.py "$FITDIRECTORY" --fit-id)
     mkdir -p "$HOME/tmp"
     echo "$THEIDS" > "$GARMIN310CACHE"
 }
@@ -79,6 +79,7 @@ cache-garmin-310-full () {
 cache-garmin-310-add () {
     # add missing files to cache
     if [[ -e "$GARMIN310CACHE" ]];then
+        local OTLBSOURCE=$(get-otlb-source)
         # find things that are missing or have change since last one and repocess
         # check for files in $FITDIRECTORY that are not in cacheids
         local FITFILES=($(readlink -f "$FITDIRECTORY")/*.fit)
@@ -90,17 +91,20 @@ cache-garmin-310-add () {
             # check if each fitfile is in cache, make this as easy as possible
             # TODO: should already be normalized
             FITFILE="${FITFILES[$i]}"
-            # TODO: I hope this grep is robust enough
+            # TODO: fix up this grep so I check for something valid
             if grep -- "${FITFILES[$i]}" "$GARMIN310CACHE" &>/dev/null; then
-                msg "Found ${FITFILES[$i]}!!!"
+                true
+                # msg "Found ${FITFILES[$i]}!!!"
             else
-                ORPHANS+="${FITFILES[$i]}"
+                ORPHANS+=("${FITFILES[$i]}")
                 warn "Not found for ${FITFILES[$i]}!!!"
             fi
         done
+        for ((i=0; i<${#ORPHANS[@]}; i++)); do
+            local DATESTAMP=$(python "$OTLBSOURCE"/read_files.py --fit-id "${ORPHANS[$i]}")
+            echo "$DATESTAMP" >> "$GARMIN310CACHE"
+        done
         IFS=$OLDIFS
-        echo "${ORPHANS[@]}"
-        # TODO: calculate and add to cached file if
     else
         yell "Garmin 310 cache not present, rebuild whole thing!"
     fi
@@ -130,7 +134,7 @@ fetch-garmin-310 () {
         # there's probably a better way of dealing with arguments
         if [[ -z "$1" || "$1" == "--help" ]]; then
             echo "$USAGE"
-            return 0;
+            return 0
         fi
         h2
         # XXXX this seems to be necessary about once a day, but hangs if I do it every time
@@ -178,7 +182,7 @@ fetch-garmin-310 () {
                     if [[ ! "$THECACHEDFILES" =~ $THEFITFILENORMALIZED ]]; then
                         # read file....
                         echo "Read: $THEFITFILE"
-                        local THEMISSINGID=$(python "$OTLBSOURCE"/read_files.py "$THEFITFILE" --fit-id)
+                        local THEMISSINGID=$(python "$OTLBSOURCE"/read_files.py --fit-id "$THEFITFILE")
                         # echo "$THENEWID"
                         THEMISSINGFITS="${THEMISSINGFITS}"$'\n'"${THEMISSINGID}"
                     fi
@@ -208,6 +212,9 @@ fetch-garmin-310 () {
                  done)
                 echo "The new .fit files are finally processed and ready!"
             }
+            h2
+            echo "Updating cache!"
+            cache-garmin-310-add
             h2
             if [[ -z $DRYRUN ]]; then
                 echo "Creating osm maps"
@@ -243,7 +250,7 @@ convert-aux-devices () {
 
 get-id-fit () {
     local OTLBSOURCE=$(get-otlb-source)
-    local XMLID=$(python "$OTLBSOURCE"/read_files.py "$1" --fit-id)
+    local XMLID=$(python "$OTLBSOURCE"/read_files.py --fit-id "$1")
     echo $XMLID
 }
 
@@ -280,7 +287,7 @@ create-osm-maps () {
     # meant to run in current directory
     for f in ${PWD}/*; do
         # yes, avoid existing ones
-        [[ "${f}" =~ -1280.png ]] && continue
+        [[ "$f" =~ -1280.png ]] && continue
         if [[ ! -e ${f%%.*}.png ]]; then
             echo "Creating map for $f"
             create-osm-map "$f"
@@ -315,11 +322,11 @@ create-osm-map () {
     # convert to gpx if not already gpx, otherwise just copy to tmp directory
     # TODO: handle /temp files better
     if [[ ${1##*.} == "fit" ]]; then
-        gpsbabel -i garmin_fit -f "${1}" -o gpx -F "${ROUTEFILE}"
+        gpsbabel -i garmin_fit -f "$1" -o gpx -F "$ROUTEFILE"
     elif [[ ${1##*.} == "tcx" ]]; then
-        gpsbabel -i tcx -f "${1}" -o gpx -F "${ROUTEFILE}"
+        gpsbabel -i tcx -f "$1" -o gpx -F "$ROUTEFILE"
     elif [[ ${1##*.} == "gpx" ]]; then
-        cp "${1}" "${ROUTEFILE}"
+        cp "$1" "$ROUTEFILE"
     else
         yell "No appropriate file found for osm map!"
         return 1
@@ -329,8 +336,8 @@ create-osm-map () {
     # TODO: eventually just merge xml's automatically
     cp "$OTLBSOURCE/osm-route.xml" "${OSMCARTODIRECTORY}"/osm-route.xml
     # --add-layers route-line,route-points
-    echo nik4.py --fit route-line --padding 100 -z 17 "${OSMCARTODIRECTORY}/osm-route.xml" "$(dirname $1)/${THEID}.png" --vars routefile="${ROUTEFILE}"
-    nik4.py --fit route-line --padding 100 -z 17 "${OSMCARTODIRECTORY}/osm-route.xml" "$(dirname $1)/${THEID}.png" --vars routefile="${ROUTEFILE}"
+    echo nik4.py --fit route-line --padding 100 -z 17 "${OSMCARTODIRECTORY}/osm-route.xml" "$(dirname $1)/${THEID}.png" --vars routefile="$ROUTEFILE"
+    nik4.py --fit route-line --padding 100 -z 17 "${OSMCARTODIRECTORY}/osm-route.xml" "$(dirname $1)/${THEID}.png" --vars routefile="$ROUTEFILE"
 }
 
 
@@ -338,7 +345,8 @@ create-osm-map () {
 ## Old code that may prove useful Not documented and requires the
 ## package 'garmin-forerunner-tools'.
 
-OWNERGROUP="<<owner>>:<<group>>"
+# these placeholders mess up my Emacs
+# OWNERGROUP="<<owner>>:<<group>>"
 fetch-garmin-305 () {
     # Only here for historical purposes, my Garmin 305 broke after 4
     # good years of service. Therefore, this command is disabled!
@@ -376,7 +384,7 @@ convert-android-mytracks () {
     for f in $SAMSUNG_INTERMEDIATEDIRECTORY/*; do
         if [[ ${f##*.} == "tcx" ]]; then
             # this only supports a very specific file format
-            local XMLIDFILE=$(basename "${f}")
+            local XMLIDFILE=$(basename "$f")
             local XMLIDFILE="${XMLIDFILE// /T}"
             local XMLIDFILE="${XMLIDFILE//:/}"
             local XMLIDFILE="${XMLIDFILE//_/}"
