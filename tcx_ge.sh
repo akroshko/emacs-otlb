@@ -27,13 +27,13 @@ main () {
     local BASENAME=$(basename "$1")
     local TMPFILE=$(mktemp --suffix=.kml)
     if [[ "$1" == *.tcx ]]; then
-        gpsbabel -i gtrnctr -f "$1" -o kml -F "${TMPFILE}"
+        gpsbabel -i gtrnctr -f "$1" -o kml -F "$TMPFILE"
     elif [[ "$1" == *.gpx ]]; then
-        gpsbabel -i gpx -f "$1" -o kml -F "${TMPFILE}"
+        gpsbabel -i gpx -f "$1" -o kml -F "$TMPFILE"
     elif [[ "$1" == *.fit ]]; then
-        gpsbabel -i garmin_fit -f "$1" -o kml -F "${TMPFILE}"
+        gpsbabel -i garmin_fit -f "$1" -o kml -F "$TMPFILE"
     fi
     # TODO: change to google-chrome https://earth.google.com/web
-    google-earth "${TMPFILE}"
+    google-earth "$TMPFILE"
 }
 main "$@"

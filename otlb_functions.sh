@@ -184,7 +184,7 @@ fetch-garmin-310 () {
                         echo "Read: $THEFITFILE"
                         local THEMISSINGID=$(python "$OTLBSOURCE"/read_files.py --fit-id "$THEFITFILE")
                         # echo "$THENEWID"
-                        THEMISSINGFITS="${THEMISSINGFITS}"$'\n'"${THEMISSINGID}"
+                        THEMISSINGFITS="$THEMISSINGFITS"$'\n'"${THEMISSINGID}"
                     fi
                 done
                 echo "Found full ids to process! The new .fit files still aren't ready yet!"
@@ -199,13 +199,13 @@ fetch-garmin-310 () {
                      local THEID=$(cut -d' ' -f2 <<< "$THEMISSINGFIT")
                      if [[ ! -e "${TCXDIRECTORY}/${THEID}.tcx" && ! -e "${TCXDIRECTORY}/${THEID}.fit" && ! -e "${TCXDIRECTORYOLDER}/${THEID}.tcx" && ! -e "${TCXDIRECTORYOLDER}/${THEID}.fit" ]]; then
                          echo "Missing $THEID! Copying!"
-                         if [[ ! -e "${THEORIGINALFIT}" ]]; then
-                             echo "Cannot copy ${THEORIGINALFIT}! Not found!"
+                         if [[ ! -e "$THEORIGINALFIT" ]]; then
+                             echo "Cannot copy $THEORIGINALFIT! Not found!"
                          else
                              if [[ -z $DRYRUN ]]; then
-                                 cp "${THEORIGINALFIT}" "${TCXDIRECTORY}/${THEID}.fit"
+                                 cp "$THEORIGINALFIT" "$TCXDIRECTORY/$THEID.fit"
                              else
-                                 echo "Dry run: cp ${THEORIGINALFIT} ${TCXDIRECTORY}/${THEID}.fit"
+                                 echo "Dry run: cp $THEORIGINALFIT $TCXDIRECTORY/$THEID.fit"
                              fi
                          fi
                      fi
@@ -218,7 +218,7 @@ fetch-garmin-310 () {
             h2
             if [[ -z $DRYRUN ]]; then
                 echo "Creating osm maps"
-                cd "${TCXDIRECTORY}"
+                cd "$TCXDIRECTORY"
                 create-osm-maps
             else
                 echo "Dry run! Not creating maps!"
@@ -334,7 +334,7 @@ create-osm-map () {
     # parse the raw osm file, add the appropriate route file, and add to the directory
     # put the output file where it belongs
     # TODO: eventually just merge xml's automatically
-    cp "$OTLBSOURCE/osm-route.xml" "${OSMCARTODIRECTORY}"/osm-route.xml
+    cp "$OTLBSOURCE/osm-route.xml" "$OSMCARTODIRECTORY/osm-route.xml"
     # --add-layers route-line,route-points
     echo nik4.py --fit route-line --padding 100 -z 17 "${OSMCARTODIRECTORY}/osm-route.xml" "$(dirname $1)/${THEID}.png" --vars routefile="$ROUTEFILE"
     nik4.py --fit route-line --padding 100 -z 17 "${OSMCARTODIRECTORY}/osm-route.xml" "$(dirname $1)/${THEID}.png" --vars routefile="$ROUTEFILE"
