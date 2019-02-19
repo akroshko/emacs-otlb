@@ -182,7 +182,7 @@ in appropriate place."
 
 (defun otlb-buffer-p ()
   "Check if this is an otlb buffer."
-  (and (eq major-mode 'org-mode)
+  (and (derived-mode-p 'org-mode)
        (save-excursion (goto-char (point-min))
                        ;; assume two spaces in front of TBLEL
                        (re-search-forward "^  #\\+TBLEL: otlb-gps-calc" nil t))
