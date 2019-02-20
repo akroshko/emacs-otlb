@@ -210,7 +210,7 @@ in appropriate place."
 (defun otlb-gps-cycle ()
   "Cycle headings and tables open specific to otlb-gps."
   (interactive) (otlb-gps-interactive)
-  (org-cycle '(64)) (org-cycle-hide-drawers 'all))
+  (org-show-all) (org-cycle-hide-drawers 'all))
 
 (defun otlb-gps-cycle-shift ()
   "Cycle headings and tables closed specific to otlb-gps."
