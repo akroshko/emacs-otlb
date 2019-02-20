@@ -91,13 +91,13 @@ appropriate place."
 (defun otlb-gps-interactive ()
   "For now this refreshes and ensures that commands are called
 in appropriate place."
-  (unless (string= buffer-file-name otlb-gps-pedestrian-location)
+  (unless (and buffer-file-name (string= buffer-file-name otlb-gps-pedestrian-location))
     (error "Appropriate buffer required for otlb commands!!!")))
 
 (defun otlb-gps-interactive-refresh ()
   "For now this refreshes and ensures that commands are called
 in appropriate place."
-  (unless (string= buffer-file-name otlb-gps-pedestrian-location)
+  (unless (and buffer-file-name (string= buffer-file-name otlb-gps-pedestrian-location))
     (error "Appropriate buffer required for otlb commands!!!"))
   (otlb-gps-refresh))
 
