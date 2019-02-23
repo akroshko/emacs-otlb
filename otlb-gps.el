@@ -7,7 +7,7 @@
 ;; Author: Andrew Kroshko
 ;; Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 ;; Created: Sun Apr 5, 2015
-;; Version: 20180811
+;; Version: 20190223
 ;; URL: https://github.com/akroshko/emacs-otlb
 ;;
 ;; This program is free software; you can redistribute it and/or
@@ -104,103 +104,94 @@ in appropriate place."
 ;; only global key required!
 (global-set-key (kbd "s-j l p") 'otlb-gps-find-pedestrian-location)
 
+
+(defun otlb-gps-mode-map (map)
+  "Return a standard mode map for otlb-gps."
+  (define-key map (kbd "s-l *")   'otlb-gps-recalculate-all)
+  (define-key map (kbd "s-l c")   'otlb-gps-insert-conditions)
+  (define-key map (kbd "s-l f")   'otlb-gps-fetch)
+  (define-key map (kbd "s-l M-g") 'otlb-gps-graph-distance)
+  (define-key map (kbd "s-l g")   'otlb-gps-graph-time)
+  (define-key map (kbd "s-l i")   'otlb-gps-insert)
+  (define-key map (kbd "s-l M-i") 'otlb-gps-insert-auxiliary)
+  ;; TODO: do I really want this capitalization?
+  (define-key map (kbd "s-l L")   'otlb-gps-cycle-shift)
+  (define-key map (kbd "s-l s-L") 'otlb-gps-cycle-shift)
+  ;; TODO: make sure this increments workouts
+  (define-key map (kbd "H-j")     'otlb-gps-map-preview)
+  (define-key map (kbd "H-z")     'otlb-gps-map-preview)
+  (define-key map (kbd "s-o o")   'otlb-gps-map-open)
+  (define-key map (kbd "s-o s-o") 'otlb-gps-map-open)
+  (define-key map (kbd "s-l m")   'otlb-gps-open-cached-osm)
+  (define-key map (kbd "s-l M-m") 'otlb-gps-open-google-earth)
+  (define-key map (kbd "s-l n")   'otlb-gps-insert-note)
+  ;; TODO: o=other, change names
+  (define-key map (kbd "s-l o")   'otlb-gps-insert-miscellaneous)
+  (define-key map (kbd "s-l M-o") 'otlb-gps-insert-miscellaneous-ask)
+  ;; TODO: fix these
+  ;; (define-key map (kbd "s-p M-p") 'otlb-gps-plot-running-weekly-totals)
+  ;; (define-key map (kbd "s-p p")   'otlb-gps-plot-per-week-totals)
+  (define-key map (kbd "s-l l")   'otlb-gps-cycle)
+  (define-key map (kbd "s-l s-l") 'otlb-gps-cycle)
+  ;; used to be s-p q, but trying this out...
+  (define-key map (kbd "H-r")     'otlb-gps-toggle-quality)
+  (define-key map (kbd "s-l s")   'otlb-gps-sort)
+  (define-key map (kbd "s-l t")   'otlb-gps-toggle)
+  (define-key map (kbd "s-l u")   'otlb-gps-insert-unrecorded)
+  (define-key map (kbd "s-l w")   'otlb-gps-footwear)
+  (define-key map (kbd "H-t")     'otlb-gps-toggle)
+  ;; menus
+  (define-key map [menu-bar otlb-gps] (cons "otlb-gps" (make-sparse-keymap "otlb-gps")))
+  (define-key map [menu-bar otlb-gps google-earth]             '("Open with Google Earth" . otlb-gps-open-google-earth))
+  (define-key map [menu-bar otlb-gps osm]                      '("Open cached OSM"        . otlb-gps-open-cached-osm))
+  (define-key map [menu-bar otlb-gps plot-running-weekly]      '("Plot running weekly totals" . otlb-gps-plot-running-weekly-totals))
+  (define-key map [menu-bar otlb-gps plot-per-weekly]          '("Plot per-week totals" . otlb-gps-plot-per-week-totals))
+  (define-key map [menu-bar otlb-gps graph-distance]           '("Graph by distance" . otlb-gps-graph-distance))
+  (define-key map [menu-bar otlb-gps graph-time]               '("Graph by time" . otlb-gps-graph-time))
+  (define-key map [menu-bar otlb-gps separator2]               '("--"))
+  (define-key map [menu-bar otlb-gps toggle-quality]           '("Toggle quality" . otlb-gps-toggle-quality))
+  (define-key map [menu-bar otlb-gps toggle-type]              '("Toggle type" . otlb-gps-toggle))
+  (define-key map [menu-bar otlb-gps insert-footwear]          '("Insert footwear" . otlb-gps-footwear))
+  (define-key map [menu-bar otlb-gps insert-conditions]        '("Insert conditions" . otlb-gps-insert-conditions))
+  (define-key map [menu-bar otlb-gps insert-note]              '("Insert note" . otlb-gps-insert-note))
+  (define-key map [menu-bar otlb-gps insert-miscellaneous-ask] '("Insert miscellaneous type" . otlb-gps-insert-miscellaneous-ask))
+  (define-key map [menu-bar otlb-gps insert-miscellaneous]     '("Insert miscellaneous" . otlb-gps-insert-miscellaneous))
+  (define-key map [menu-bar otlb-gps insert-unrecorded]        '("Insert unrecorded" . otlb-gps-insert-unrecorded))
+  (define-key map [menu-bar otlb-gps insert]                   '("Insert activity" . otlb-gps-insert))
+  (define-key map [menu-bar otlb-gps separator1]               '("--"))
+  (define-key map [menu-bar otlb-gps sort]                     '("Sort" . otlb-gps-sort))
+  (define-key map [menu-bar otlb-gps cycle-shift]              '("Cycle shift" . otlb-gps-cycle-shift))
+  (define-key map [menu-bar otlb-gps cycle]                    '("Cycle" . otlb-gps-cycle))
+  (define-key map [menu-bar otlb-gps recalulate]               '("Recalculate all" . otlb-gps-recalculate-all))
+  map)
+
 (defvar otlb-gps-mode-map
-  nil
+  (let ((map (make-sparse-keymap)))
+    (otlb-gps-mode-map map))
   "Keymap for otlb-gps.")
 
-
-(defun otlb-gps-mode-map ()
-  "Return a standard mode map for otlb-gps."
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "s-l *")   'otlb-gps-recalculate-all)
-    (define-key map (kbd "s-l c")   'otlb-gps-insert-conditions)
-    (define-key map (kbd "s-l f")   'otlb-gps-fetch)
-    (define-key map (kbd "s-l M-g") 'otlb-gps-graph-distance)
-    (define-key map (kbd "s-l g")   'otlb-gps-graph-time)
-    (define-key map (kbd "s-l i")   'otlb-gps-insert)
-    (define-key map (kbd "s-l M-i") 'otlb-gps-insert-auxiliary)
-    ;; TODO: do I really want this capitalization?
-    (define-key map (kbd "s-l L")   'otlb-gps-cycle-shift)
-    (define-key map (kbd "s-l s-L") 'otlb-gps-cycle-shift)
-    ;; TODO: make sure this increments workouts
-    (define-key map (kbd "H-j")     'otlb-gps-map-preview)
-    (define-key map (kbd "H-z")     'otlb-gps-map-preview)
-    (define-key map (kbd "s-o o")   'otlb-gps-map-open)
-    (define-key map (kbd "s-o s-o") 'otlb-gps-map-open)
-    (define-key map (kbd "s-l m")   'otlb-gps-open-cached-osm)
-    (define-key map (kbd "s-l M-m") 'otlb-gps-open-google-earth)
-    (define-key map (kbd "s-l n")   'otlb-gps-insert-note)
-    ;; TODO: o=other, change names
-    (define-key map (kbd "s-l o")   'otlb-gps-insert-miscellaneous)
-    (define-key map (kbd "s-l M-o") 'otlb-gps-insert-miscellaneous-ask)
-    ;; TODO: fix these
-    ;; (define-key map (kbd "s-p M-p") 'otlb-gps-plot-running-weekly-totals)
-    ;; (define-key map (kbd "s-p p")   'otlb-gps-plot-per-week-totals)
-    (define-key map (kbd "s-l l")   'otlb-gps-cycle)
-    (define-key map (kbd "s-l s-l") 'otlb-gps-cycle)
-    ;; used to be s-p q, but trying this out...
-    (define-key map (kbd "H-r")     'otlb-gps-toggle-quality)
-    (define-key map (kbd "s-l s")   'otlb-gps-sort)
-    (define-key map (kbd "s-l t")   'otlb-gps-toggle)
-    (define-key map (kbd "s-l u")   'otlb-gps-insert-unrecorded)
-    (define-key map (kbd "s-l w")   'otlb-gps-footwear)
-    (define-key map (kbd "H-t")     'otlb-gps-toggle)
-    ;; menus
-    (define-key map [menu-bar otlb-gps] (cons "otlb-gps" (make-sparse-keymap "otlb-gps")))
-    (define-key map [menu-bar otlb-gps google-earth]             '("Open with Google Earth" . otlb-gps-open-google-earth))
-    (define-key map [menu-bar otlb-gps osm]                      '("Open cached OSM"        . otlb-gps-open-cached-osm))
-    (define-key map [menu-bar otlb-gps plot-running-weekly]      '("Plot running weekly totals" . otlb-gps-plot-running-weekly-totals))
-    (define-key map [menu-bar otlb-gps plot-per-weekly]          '("Plot per-week totals" . otlb-gps-plot-per-week-totals))
-    (define-key map [menu-bar otlb-gps graph-distance]           '("Graph by distance" . otlb-gps-graph-distance))
-    (define-key map [menu-bar otlb-gps graph-time]               '("Graph by time" . otlb-gps-graph-time))
-    (define-key map [menu-bar otlb-gps separator2]               '("--"))
-    (define-key map [menu-bar otlb-gps toggle-quality]           '("Toggle quality" . otlb-gps-toggle-quality))
-    (define-key map [menu-bar otlb-gps toggle-type]              '("Toggle type" . otlb-gps-toggle))
-    (define-key map [menu-bar otlb-gps insert-footwear]          '("Insert footwear" . otlb-gps-footwear))
-    (define-key map [menu-bar otlb-gps insert-conditions]        '("Insert conditions" . otlb-gps-insert-conditions))
-    (define-key map [menu-bar otlb-gps insert-note]              '("Insert note" . otlb-gps-insert-note))
-    (define-key map [menu-bar otlb-gps insert-miscellaneous-ask] '("Insert miscellaneous type" . otlb-gps-insert-miscellaneous-ask))
-    (define-key map [menu-bar otlb-gps insert-miscellaneous]     '("Insert miscellaneous" . otlb-gps-insert-miscellaneous))
-    (define-key map [menu-bar otlb-gps insert-unrecorded]        '("Insert unrecorded" . otlb-gps-insert-unrecorded))
-    (define-key map [menu-bar otlb-gps insert]                   '("Insert activity" . otlb-gps-insert))
-    (define-key map [menu-bar otlb-gps separator1]               '("--"))
-    (define-key map [menu-bar otlb-gps cycle-shift]              '("Cycle shift" . otlb-gps-cycle-shift))
-    (define-key map [menu-bar otlb-gps cycle]                    '("Cycle" . otlb-gps-cycle))
-    (define-key map [menu-bar otlb-gps recalulate]               '("Recalculate all" . otlb-gps-recalculate-all))
-    map))
-(setq otlb-gps-mode-map (otlb-gps-mode-map))
-
-(define-minor-mode otlb-gps-mode
-  :global nil
-  :lighter " otlb"
-  :keymap otlb-gps-mode-map)
+(define-derived-mode otlb-gps-mode org-mode "org-table logbook for gps devices"
+  nil)
 
 (add-hook 'otlb-gps-mode-hook 'otlb-gps-mode-init)
 (defun otlb-gps-mode-init ()
-  (when (and otlb-gps-mode (functionp 'hl-line-mode))
+  (when (functionp 'hl-line-mode)
     (hl-line-mode 1)))
 
 (defun otlb-buffer-p ()
   "Check if this is an otlb buffer."
-  (and (derived-mode-p 'org-mode)
-       (save-excursion (goto-char (point-min))
-                       ;; assume two spaces in front of TBLEL
-                       (re-search-forward "^  #\\+TBLEL: otlb-gps-calc" nil t))
-       t))
+  (when (save-excursion (goto-char (point-min))
+                        ;; assume two spaces in front of TBLEL
+                        (re-search-forward "^  #\\+TBLEL: otlb-gps-calc" nil t))
+    t))
 
 (defun otlb-setup-hook ()
   "Setup when otlb-gps-mode when activating org-mode."
   (when (otlb-buffer-p)
     ;; I like this mode, but it really slows down loading some org-mode files
-    (otlb-gps-mode 1)))
+    (otlb-gps-mode)))
 
-(add-hook 'org-mode-hook 'otlb-setup-hook)
-
-(defun otlb-gps-minibuffer-setup-hook ()
-  "Make sure otlb-gps-mode is not interferring with minibuffer."
-  (otlb-gps-mode 0))
-
-(add-hook 'minibuffer-setup-hook 'otlb-gps-minibuffer-setup-hook)
+(add-hook 'find-file-hook 'otlb-setup-hook)
 
 (defun otlb-gps-find-pedestrian-location ()
   "Find the pedestrian log location."
@@ -255,7 +246,7 @@ off of a tool for downloading off of a Garmin 305."
 (defun otlb-gps-log-ids ()
   "Get all GPS IDs from the configured logbook."
   (setq otlb-gps-log-ids nil)
-  (with-current-file-min otlb-gps-pedestrian-location
+  (with-current-file-transient-min otlb-gps-pedestrian-location
     ;; walk all tables in the file
     ;; TODO: next thing to replace, bottleneck
     (let ((latest-id (otlb-gps-get-latest-id))
@@ -605,20 +596,18 @@ well as filling in known information."
         (error nil)))
     ;; map a swap if next newer, until buffer stops changing
     ;; need a comparison function for garmin ids
-    (if (and second-id (string< first-id second-id))
-        (save-excursion
-          (progn
-            (otlb-gps-next-entry)
-            (org-move-subtree-up)
-            (setq otlb-gps-sort-done-this-step t)
-            t))
-      nil)))
+    (when (and second-id (string< first-id second-id))
+      (save-excursion
+        (otlb-gps-next-entry)
+        (org-move-subtree-up)
+        (setq otlb-gps-sort-done-this-step t)
+        t))))
 
 (defun otlb-gps-recalculate-all ()
   "Recalculate all GPS logbook enteries."
   (interactive)
   (otlb-gps-interactive)
-  (with-current-file otlb-gps-pedestrian-location
+  (with-current-file-transient otlb-gps-pedestrian-location
     (org-table-map-tables 'org-table-recalculate)))
 
 (defun otlb-gps-plot-per-week-totals (&optional start-id previous-weeks)
@@ -636,7 +625,7 @@ TODO: need a better description of this"
         (last-week-end nil)
         (first-week-end nil))
     (save-window-excursion
-      (with-current-file-min dat-file
+      (with-current-file-transient-min dat-file
         (erase-buffer)
         (dolist (thing weekly-totals)
           (let ((total-thing (cadr (assoc 'total thing)))
@@ -656,10 +645,9 @@ TODO: need a better description of this"
             (insert (concat week-end " | " (number-to-string (otdb-table-number (elt total-thing 1))) " | " (elt total-thing 2) " | "
                                            (number-to-string (otdb-table-number (elt   run-thing 1))) " | " (elt   run-thing 2) " | "
                                            (number-to-string (otdb-table-number (elt  walk-thing 1))) " | " (elt  walk-thing 2) "\n"))))
-        (save-buffer)
-        (kill-buffer))
+        (save-buffer))
       (message (concat "otlb-gps: wrote plot data to " dat-file))
-      (with-current-file-min script-file
+      (with-current-file-transient-min script-file
         (erase-buffer)
         (insert "clear\n")
         (insert "reset\n")
@@ -686,8 +674,7 @@ TODO: need a better description of this"
                                         " '' using (timecolumn(1)-60*60*24*7*0.45):4 title 'running', "
                                         " '' using (timecolumn(1)-60*60*24*7*0.75):6 title 'walking'\n"))
         (save-buffer)
-        (gnuplot-send-buffer-to-gnuplot)
-        (kill-buffer))
+        (gnuplot-send-buffer-to-gnuplot))
       (bury-buffer (get-buffer "*gnuplot*")))))
 
 ;; (otlb-gps-running-weekly-totals (otlb-gps-get-id) 1 4)
@@ -712,7 +699,7 @@ TODO: create buffer for looking at raw data?
         (first-week-end nil))
     ;; plot!!
     (save-window-excursion
-      (with-current-file-min dat-file
+      (with-current-file-transient-min dat-file
         (erase-buffer)
         (dolist (thing weekly-totals)
           (let ((total-thing (cadr (assoc 'total thing)))
@@ -731,9 +718,8 @@ TODO: create buffer for looking at raw data?
             (insert (concat week-end " | " (number-to-string (otdb-table-number (elt total-thing 1))) " | " (elt total-thing 2) " | "
                                            (number-to-string (otdb-table-number (elt   run-thing 1))) " | " (elt   run-thing 2) " | "
                                            (number-to-string (otdb-table-number (elt  walk-thing 1))) " | " (elt  walk-thing 2) "\n"))))
-        (save-buffer)
-        (kill-buffer))
-      (with-current-file-min script-file
+        (save-buffer))
+      (with-current-file-transient-min script-file
         (erase-buffer)
         (insert "clear\n")
         (insert "reset\n")
@@ -760,8 +746,7 @@ TODO: create buffer for looking at raw data?
                                         " '' using (timecolumn(1)-60*60*24*0.45):4 title 'running', "
                                         " '' using (timecolumn(1)-60*60*24*0.75):6 title 'walking'\n"))
         (save-buffer)
-        (gnuplot-send-buffer-to-gnuplot)
-        (kill-buffer))
+        (gnuplot-send-buffer-to-gnuplot))
       (bury-buffer (get-buffer "*gnuplot*")))))
 
 (defun otlb-gps-elp-instrument ()
@@ -802,7 +787,7 @@ TODO: create buffer for looking at raw data?
 (defun otlb-gps-select-shoes (&optional header-message)
   "Interactively select the shoes worn based on current
 footwear."
-  (with-current-file-min otlb-gps-footwear-current
+  (with-current-file-transient-min otlb-gps-footwear-current
     ;; advance to table
     (cic:org-find-table)
     (let* ((table-lisp (cic:org-table-to-lisp-no-separators))
@@ -1261,7 +1246,7 @@ start time."
         ids
         sums)
     ;; go through document and count all shoe ID's
-    (with-current-file otlb-gps-pedestrian-location
+    (with-current-file-transient otlb-gps-pedestrian-location
       (do-otlb-gps-entries latest last gathered
                            (progn
                              (otlb-gps-find-actual-table-last-row)
@@ -1290,7 +1275,7 @@ start time."
   ;; TODO: fix
   (interactive)
   (let ((shoe-totals (otlb-gps-shoe-totals)))
-    (with-current-file-min otlb-gps-footwear-current
+    (with-current-file-transient-min otlb-gps-footwear-current
       (dolist (shoe shoe-totals)
         ;; find the unique shoe ID
         (goto-char (point-min))
@@ -1421,13 +1406,13 @@ corresponding to an otlb-gps log entry."
 (defun otlb-gps-get-latest-id ()
   "Get the more recent ID in the logbook.  Assumes logbook is
 sorted."
-  (with-current-file-min otlb-gps-pedestrian-location
+  (with-current-file-transient-min otlb-gps-pedestrian-location
     (otlb-gps-get-id-from-heading)))
 
 (defun otlb-gps-get-last-id ()
   "Get the least recent ID in the logbook.  Assumes logbook is
 sorted."
-  (with-current-file-max otlb-gps-pedestrian-location
+  (with-current-file-transient-max otlb-gps-pedestrian-location
     (org-back-to-heading)
     (otlb-gps-get-id-from-heading)))
 
