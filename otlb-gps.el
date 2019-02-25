@@ -2,7 +2,7 @@
 ;;; which is centered around GPS data that has been downloaded from a
 ;;; Garmin 310XT fitness watch or Samsung Galaxy SIII phone.
 ;;
-;; Copyright (C) 2015-2018, Andrew Kroshko, all rights reserved.
+;; Copyright (C) 2015-2019, Andrew Kroshko, all rights reserved.
 ;;
 ;; Author: Andrew Kroshko
 ;; Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
