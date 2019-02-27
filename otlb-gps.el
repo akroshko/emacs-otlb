@@ -141,7 +141,7 @@ in appropriate place."
   (define-key map (kbd "s-l w")   'otlb-gps-footwear)
   (define-key map (kbd "H-t")     'otlb-gps-toggle)
   ;; menus
-  (define-key map [menu-bar otlb-gps] (cons "otlb-gps" (make-sparse-keymap "otlb-gps")))
+  (define-key map [menu-bar otlb-gps]                           (cons "otlb-gps" (make-sparse-keymap "otlb-gps")))
   (define-key map [menu-bar otlb-gps google-earth]             '("Open with Google Earth" . otlb-gps-open-google-earth))
   (define-key map [menu-bar otlb-gps osm]                      '("Open cached OSM"        . otlb-gps-open-cached-osm))
   (define-key map [menu-bar otlb-gps plot-running-weekly]      '("Plot running weekly totals" . otlb-gps-plot-running-weekly-totals))
@@ -645,7 +645,7 @@ TODO: need a better description of this"
             (insert (concat week-end " | " (number-to-string (otdb-table-number (elt total-thing 1))) " | " (elt total-thing 2) " | "
                                            (number-to-string (otdb-table-number (elt   run-thing 1))) " | " (elt   run-thing 2) " | "
                                            (number-to-string (otdb-table-number (elt  walk-thing 1))) " | " (elt  walk-thing 2) "\n"))))
-        (save-buffer))
+        (basic-save-buffer))
       (message (concat "otlb-gps: wrote plot data to " dat-file))
       (with-current-file-transient-min script-file
         (erase-buffer)
@@ -673,7 +673,7 @@ TODO: need a better description of this"
         (insert (concat "plot '" dat-file "' using (timecolumn(1)-60*60*24*7*0.15):2 title 'total', "
                                         " '' using (timecolumn(1)-60*60*24*7*0.45):4 title 'running', "
                                         " '' using (timecolumn(1)-60*60*24*7*0.75):6 title 'walking'\n"))
-        (save-buffer)
+        (basic-save-buffer)
         (gnuplot-send-buffer-to-gnuplot))
       (bury-buffer (get-buffer "*gnuplot*")))))
 
@@ -718,7 +718,7 @@ TODO: create buffer for looking at raw data?
             (insert (concat week-end " | " (number-to-string (otdb-table-number (elt total-thing 1))) " | " (elt total-thing 2) " | "
                                            (number-to-string (otdb-table-number (elt   run-thing 1))) " | " (elt   run-thing 2) " | "
                                            (number-to-string (otdb-table-number (elt  walk-thing 1))) " | " (elt  walk-thing 2) "\n"))))
-        (save-buffer))
+        (basic-save-buffer))
       (with-current-file-transient-min script-file
         (erase-buffer)
         (insert "clear\n")
@@ -745,7 +745,7 @@ TODO: create buffer for looking at raw data?
         (insert (concat "plot '" dat-file "' using (timecolumn(1)-60*60*24*0.15):2 title 'total', "
                                         " '' using (timecolumn(1)-60*60*24*0.45):4 title 'running', "
                                         " '' using (timecolumn(1)-60*60*24*0.75):6 title 'walking'\n"))
-        (save-buffer)
+        (basic-save-buffer)
         (gnuplot-send-buffer-to-gnuplot))
       (bury-buffer (get-buffer "*gnuplot*")))))
 
