@@ -7,7 +7,7 @@
 ;; Author: Andrew Kroshko
 ;; Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 ;; Created: Sun Apr 5, 2015
-;; Version: 20190223
+;; Version: 20190228
 ;; URL: https://github.com/akroshko/emacs-otlb
 ;;
 ;; This program is free software; you can redistribute it and/or
@@ -555,7 +555,7 @@ well as filling in known information."
   ;; TODO: configure command a little better
   ;; TODO: outdated because of no options too
   (call-process "x11_save_focused_window.sh" nil nil nil)
-  (start-process "terminal" nil "nohup" "rxvt-unicode" "-e" "bash" "-i" "-c" "(fetch-garmin-310);while read -r -t 0;do read -r; done;read -n 1 -s -r -p 'Press any key to continue...'"))
+  (start-process "terminal" "*terminal output*" "launch.sh" "rxvt-unicode" "-e" "bash" "-i" "-c" "(fetch-garmin-310);while read -r -t 0;do read -r; done;read -n 1 -s -r -p 'Press any key to continue...'"))
 
 ;; sort the entries by reverse date/time, bubble sort is nice when log
 ;; is already almost sorted
@@ -1293,7 +1293,7 @@ start time."
          (output-file (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".png")) (concat (car otlb-gps-locations) "/" id ".png"))))
     ;; open image with feh
     (call-process "x11_save_focused_window.sh" nil nil nil)
-    (start-process "feh otlb" nil "nohup" "feh-open-browse" output-file)))
+    (start-process "feh otlb" "*feh output*" "launch.sh" "feh-open-browse" output-file)))
 
 ;; TODO: all gps locations automatically
 (defun otlb-gps-open-google-earth ()
@@ -1309,7 +1309,7 @@ start time."
     ;; run script to convert to gpx and open in Google Earth
     ;; TODO: change to google-chrome https://earth.google.com/web
     (call-process "x11_save_focused_window.sh" nil nil nil)
-    (start-process "google earth" nil "nohup" otlb-gps-map-command output-file)))
+    (start-process "google earth" "*google earth output*" "launch.sh" otlb-gps-map-command output-file)))
 
 (defun otlb-gps-map-preview ()
   "Preview the current logbook entry in an emacs buffer."
@@ -1339,7 +1339,7 @@ start time."
   (let* ((id (otlb-gps-get-id))
          (the-location (otlb-gps-find-id-location id)))
     (call-process "x11_save_focused_window.sh" nil nil nil)
-    (start-process "feh map" "*otlb feh maps*" "feh" (concat the-location "/" id "-1280.png"))))
+    (start-process "feh map" "*otlb feh maps output*" "feh" (concat the-location "/" id "-1280.png"))))
 
 (defun otlb-gps-graph-distance ()
   "Build a speed/elevation graph with respect to distance."
@@ -1352,7 +1352,7 @@ start time."
     ;; run script to graph it
     ;; TODO: want to record output here too
     (call-process "x11_save_focused_window.sh" nil nil nil)
-    (start-process "graph" "*graph output*" "nohup" "python" otlb-gps-graph-fit-command output-file "--graph-fit-distance")))
+    (start-process "graph" "*graph output*" "launch.sh" "python" otlb-gps-graph-fit-command output-file "--graph-fit-distance")))
 
 (defun otlb-gps-graph-time ()
   "Build a speed/elevation graph with respect to elapsed time."
@@ -1365,7 +1365,7 @@ start time."
     ;; run script to graph it
     ;; TODO: want to record output here too
     (call-process "x11_save_focused_window.sh" nil nil nil)
-    (start-process "graph" "*graph output*" "nohup" "python" otlb-gps-graph-fit-command output-file "--graph-fit-time")))
+    (start-process "graph" "*graph output*" "launch.sh" "python" otlb-gps-graph-fit-command output-file "--graph-fit-time")))
 
 (defun otlb-gps-calc ( lisp-table lisp-table-no-seperators)
   "Calculated an updated lisp table from the LISP-TABLE-NO-SEPERATORS
