@@ -578,7 +578,7 @@ well as filling in known information."
             ;; TODO: change to quiet or make my own message?
             ;; TODO: next thing to replace, bottleneck
             (org-map-entries 'otlb-gps-bubble nil))
-          (setq bubble-count (+ 1 bubble-count))))
+          (setq bubble-count (1+ bubble-count))))
       (message "Sort done!"))))
 
 (defun otlb-gps-bubble ()
@@ -953,7 +953,7 @@ kilometer."
            (seconds (* 60 (- pace minutes))))
       (when (> seconds 59.5)
         (setq seconds 0)
-        (setq minutes (+ minutes 1)))
+        (setq minutes (1+ minutes)))
       (if abbreviate
           (format "%d:%02.0f min/k" minutes seconds)
         (format "%d:%02.0f min/km" minutes seconds)))))
@@ -1871,7 +1871,7 @@ END-ID."
           (setcar (nthcdr 18 row) equiv-245-pace)
           (setcar (nthcdr 19 row) (format "%.2f" equiv-230))
           (setcar (nthcdr 20 row) equiv-230-pace)))
-      (setq row-count (+ 1 row-count)))
+      (setq row-count (1+ row-count)))
     lisp-table))
 
 (provide 'otlb-gps)
