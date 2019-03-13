@@ -37,7 +37,7 @@
 # See the included README.md file for more information.
 
 # the path where the downloaded data and log files are stored
-OTLBLOGS=$(dirname $0)/org-logs
+OTLBLOGS=$(dirname -- "$0")/org-logs
 ########################################
 # primary device, generally the Garmin 310
 # device ID

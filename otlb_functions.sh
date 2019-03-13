@@ -54,10 +54,10 @@ get-otlb-source () {
     # https://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in
     SOURCE="${BASH_SOURCE[0]}"
     while [[ -h "$SOURCE" ]]; do # resolve $SOURCE until the file is no longer a symlink
-        DIRNAMESOURCE=$(dirname "$SOURCE")
+        DIRNAMESOURCE=$(dirname -- "$SOURCE")
         # TODO: is this redundant
         local DIR=$(cd -P "$DIRNAMESOURCE" && pwd)
-        local SOURCE=$(readlink "$SOURCE")
+        local SOURCE=$(readlink -- "$SOURCE")
         [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
     done
     local DIR=$(cd -P "$( dirname "$SOURCE" )" && pwd)
@@ -82,7 +82,7 @@ cache-garmin-310-add () {
         local OTLBSOURCE=$(get-otlb-source)
         # find things that are missing or have change since last one and repocess
         # check for files in $FITDIRECTORY that are not in cacheids
-        local FITFILES=($(readlink -f "$FITDIRECTORY")/*.fit)
+        local FITFILES=($(readlink -f -- "$FITDIRECTORY")/*.fit)
         local ORPHANS=()
         local OLDIFS=$IFS
         IFS=$'\n'
@@ -178,7 +178,7 @@ fetch-garmin-310 () {
             echo "Finding the full ids to process..."
             time {
                 for THEFITFILE in $FITDIRECTORY/*.fit;do
-                    THEFITFILENORMALIZED=$(readlink -f $THEFITFILE)
+                    THEFITFILENORMALIZED=$(readlink -f -- $THEFITFILE)
                     if [[ ! "$THECACHEDFILES" =~ $THEFITFILENORMALIZED ]]; then
                         # read file....
                         echo "Read: $THEFITFILE"
@@ -232,16 +232,17 @@ convert-aux-devices () {
     # convert files deposited in the aux incoming directory
     # TODO: document and add help here
     for f in $OTLBAUX_INCOMING/*; do
+        local THEBASENAME=$(basename -- "$f")
         if [[ ${f##*.} == "tcx" ]]; then
-            if [[ ! -e "$OTLBAUX"/$(basename $f) ]]; then
+            if [[ ! -e "$OTLBAUX/$THEBASENAME" ]]; then
                 # TODO: in case of failure
-                local THEID=$(get-id-tcx $f) || continue
+                local THEID=$(get-id-tcx "$f") || continue
                 cp "$f" "$OTLBAUX"/"$THEID".tcx
             fi
         elif [[ ${f##*.} == "gpx" ]]; then
-            if [[ ! -e "$OTLBAUX"/$(basename $f) ]]; then
+            if [[ ! -e "$OTLBAUX/$THEBASENAME" ]]; then
                 # TODO: in case of failure
-                local THEID=$(get-id-gpx $f) || continue
+                local THEID=$(get-id-gpx "$f") || continue
                 cp "$f" "$OTLBAUX"/"$THEID".gpx
             fi
         fi
@@ -336,8 +337,9 @@ create-osm-map () {
     # TODO: eventually just merge xml's automatically
     cp "$OTLBSOURCE/osm-route.xml" "$OSMCARTODIRECTORY/osm-route.xml"
     # --add-layers route-line,route-points
-    echo nik4.py --fit route-line --padding 100 -z 17 "${OSMCARTODIRECTORY}/osm-route.xml" "$(dirname $1)/${THEID}.png" --vars routefile="$ROUTEFILE"
-    nik4.py --fit route-line --padding 100 -z 17 "${OSMCARTODIRECTORY}/osm-route.xml" "$(dirname $1)/${THEID}.png" --vars routefile="$ROUTEFILE"
+    THEDIRNAME=$(dirname -- "$1")
+    echo nik4.py --fit route-line --padding 100 -z 17 "$OSMCARTODIRECTORY/osm-route.xml" "$THEDIRNAME/$THEID.png" --vars routefile="$ROUTEFILE"
+    nik4.py --fit route-line --padding 100 -z 17 "$OSMCARTODIRECTORY/osm-route.xml" "$THEDIRNAME/$THEID.png" --vars routefile="$ROUTEFILE"
 }
 
 
@@ -384,7 +386,7 @@ convert-android-mytracks () {
     for f in $SAMSUNG_INTERMEDIATEDIRECTORY/*; do
         if [[ ${f##*.} == "tcx" ]]; then
             # this only supports a very specific file format
-            local XMLIDFILE=$(basename "$f")
+            local XMLIDFILE=$(basename -- "$f")
             local XMLIDFILE="${XMLIDFILE// /T}"
             local XMLIDFILE="${XMLIDFILE//:/}"
             local XMLIDFILE="${XMLIDFILE//_/}"

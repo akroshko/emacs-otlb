@@ -36,4 +36,4 @@
 
 ########################################################################
 # load the bash functions
-source $(dirname $0)/otlb_sample_config.sh $(dirname $0)/otlb_functions.sh
+source $(dirname -- "$0")/otlb_sample_config.sh $(dirname -- "$0")/otlb_functions.sh

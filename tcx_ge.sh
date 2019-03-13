@@ -24,7 +24,7 @@
 
 main () {
     # convert to tmp
-    local BASENAME=$(basename "$1")
+    local BASENAME=$(basename -- "$1")
     local TMPFILE=$(mktemp --suffix=.kml)
     if [[ "$1" == *.tcx ]]; then
         gpsbabel -i gtrnctr -f "$1" -o kml -F "$TMPFILE"
