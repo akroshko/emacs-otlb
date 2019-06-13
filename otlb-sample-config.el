@@ -32,8 +32,8 @@
 ;; Features that might be required by this library:
 ;;
 ;; Standard Emacs features, to be documented specificly later.  Also
-;; requires features from https://github.com/akroshko/emacs-stdlib,
-;; when installed appropriately using (require 'emacs-stdlib) is
+;; requires features from https://github.com/akroshko/cic-emacs-common,
+;; when installed appropriately using (require 'cic-emacs-common) is
 ;; sufficient.
 ;;
 ;; Has supporting bash and Python scripts also have their own
@@ -118,10 +118,10 @@
                 (setq slash-part part)))
             (setq slash-split (split-string slash-part "/"))
             (if second
-                (+ (string-to-float (elt space-split 0)) (/ (string-to-float (elt slash-split 0))
-                                                            (string-to-float (elt slash-split 1))))
-              (/ (string-to-float (elt slash-split 0))
-                 (string-to-float (elt slash-split 1)))))
-        (string-to-float value)))))
+                (+ (cic:string-to-float (elt space-split 0)) (/ (cic:string-to-float (elt slash-split 0))
+                                                                (cic:string-to-float (elt slash-split 1))))
+              (/ (cic:string-to-float (elt slash-split 0))
+                 (cic:string-to-float (elt slash-split 1)))))
+        (cic:string-to-float value)))))
 
 (provide 'otlb-sample-config)

@@ -5,7 +5,7 @@
 # Author: Andrew Kroshko
 # Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 # Created: Sun May 1, 2016
-# Version: 20190228
+# Version: 20190329
 # URL: https://github.com/akroshko/emacs-otlb
 #
 # This program is free software: you can redistribute it and/or modify
@@ -92,11 +92,12 @@ def local_date_to_utc(date):
     return datetime.datetime.utcfromtimestamp(mktime(date.timetuple()))
 
 def time_to_id(the_time):
-    return ("%04d" % the_time.year)+("%02d" % the_time.month)+("%02d" % the_time.day)+'T'+("%02d" % the_time.hour)+("%02d" % the_time.minute)+("%02d" % the_time.second)
+    return ("%04d" % the_time.year)+("%02d" % the_time.month)+("%02d" % the_time.day)+'t'+("%02d" % the_time.hour)+("%02d" % the_time.minute)+("%02d" % the_time.second)
 
 def main_utc(argv):
     print id_to_utc(argv[1])
 
+# TODO: this seems to do my local time right now
 def id_to_utc(theid):
     YYYY=theid[0:4]
     MM=theid[4:6]
@@ -104,9 +105,8 @@ def id_to_utc(theid):
     hh=theid[9:11]
     mm=theid[11:13]
     ss=theid[13:15]
-    # TODO: just adding 6 hours for now
     dt=datetime.datetime(int(YYYY),int(MM),int(DD),int(hh),int(mm),int(ss))-datetime.timedelta(hours=6)
-    return "%04d%02d%02dT%02d%02d%02d" % (dt.year,dt.month,dt.day,dt.hour,dt.minute,dt.second)
+    return "%04d%02d%02dt%02d%02d%02d" % (dt.year,dt.month,dt.day,dt.hour,dt.minute,dt.second)
 
 def id_difference(theid1,theid2):
     YYYY1=theid1[0:4]
@@ -438,7 +438,7 @@ def main_fit_id(argv):
         activity.parse()
         session = next(activity.get_records_by_type('session'))
         start_time=session.get_data("start_time")
-        theid=("%04d" % start_time.year)+("%02d" % start_time.month)+("%02d" % start_time.day)+'T'+("%02d" % start_time.hour)+("%02d" % start_time.minute)+("%02d" % start_time.second)
+        theid=("%04d" % start_time.year)+("%02d" % start_time.month)+("%02d" % start_time.day)+'t'+("%02d" % start_time.hour)+("%02d" % start_time.minute)+("%02d" % start_time.second)
         thefilenametimestamp=os.path.getmtime(filename)
         theids.append((os.path.normpath(filename),theid))
     for theid in theids:

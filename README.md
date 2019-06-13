@@ -32,11 +32,11 @@ which are required to support the included *bash* and *Python*
 scripts.
 
 The associated library from
-[http://github.com/akroshko/emacs-stdlib](http://github.com/akroshko/emacs-stdlib)
+[http://github.com/akroshko/cic-emacs-common](http://github.com/akroshko/cic-emacs-common)
 is the only additional Emacs requirement, which can be installed using
 the command:
 
-    git clone https://github.com/akroshko/emacs-stdlib.git ../emacs-stdlib
+    git clone https://github.com/akroshko/cic-emacs-common.git ../cic-emacs-common
 
 in the directory for this package, which satisfies the default in the
 sample configuration file.

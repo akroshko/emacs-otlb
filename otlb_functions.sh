@@ -11,7 +11,7 @@
 # Author: Andrew Kroshko
 # Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 # Created: Fri Mar 27, 2015
-# Version: 20190228
+# Version: 20190329
 # URL: https://github.com/akroshko/emacs-otlb
 #
 # This program is free software: you can redistribute it and/or modify
@@ -184,7 +184,7 @@ fetch-garmin-310 () {
                         echo "Read: $THEFITFILE"
                         local THEMISSINGID=$(python "$OTLBSOURCE"/read_files.py --fit-id "$THEFITFILE")
                         # echo "$THENEWID"
-                        THEMISSINGFITS="$THEMISSINGFITS"$'\n'"${THEMISSINGID}"
+                        THEMISSINGFITS="$THEMISSINGFITS"$'\n'"$THEMISSINGID"
                     fi
                 done
                 echo "Found full ids to process! The new .fit files still aren't ready yet!"
@@ -197,7 +197,7 @@ fetch-garmin-310 () {
                  for THEMISSINGFIT in $THEMISSINGFITS; do
                      local THEORIGINALFIT=$(cut -d' ' -f1 <<< "$THEMISSINGFIT")
                      local THEID=$(cut -d' ' -f2 <<< "$THEMISSINGFIT")
-                     if [[ ! -e "${TCXDIRECTORY}/${THEID}.tcx" && ! -e "${TCXDIRECTORY}/${THEID}.fit" && ! -e "${TCXDIRECTORYOLDER}/${THEID}.tcx" && ! -e "${TCXDIRECTORYOLDER}/${THEID}.fit" ]]; then
+                     if [[ ! -e "$TCXDIRECTORY/$THEID.tcx" && ! -e "$TCXDIRECTORY/$THEID.fit" && ! -e "$TCXDIRECTORYOLDER/$THEID.tcx" && ! -e "$TCXDIRECTORYOLDER/$THEID.fit" ]]; then
                          echo "Missing $THEID! Copying!"
                          if [[ ! -e "$THEORIGINALFIT" ]]; then
                              echo "Cannot copy $THEORIGINALFIT! Not found!"
@@ -393,9 +393,9 @@ convert-android-mytracks () {
             local XMLIDFILE="${XMLIDFILE//-/}"
             local XMLIDFILE="${XMLIDFILE//./00.}"
             # TODO: possibly flag and convert if different sizes/hashes?
-            if [[ ! -e "${SAMSUNG_DIRECTORY}/${XMLIDFILE}" ]]; then
-                msg "Converting $f to ${SAMSUNG_DIRECTORY}/${XMLIDFILE}!"
-                cp "$f" "${SAMSUNG_DIRECTORY}/${XMLIDFILE}"
+            if [[ ! -e "$SAMSUNG_DIRECTORY/$XMLIDFILE" ]]; then
+                msg "Converting $f to $SAMSUNG_DIRECTORY/$XMLIDFILE!"
+                cp "$f" "$SAMSUNG_DIRECTORY/$XMLIDFILE"
             fi
         fi
     done

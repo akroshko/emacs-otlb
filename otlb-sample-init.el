@@ -35,8 +35,8 @@
 ;; Features that might be required by this library:
 ;;
 ;; Standard Emacs features, to be documented specificly later.  Also
-;; requires features from https://github.com/akroshko/emacs-stdlib,
-;; when installed appropriately using (require 'emacs-stdlib) is
+;; requires features from https://github.com/akroshko/cic-emacs-common,
+;; when installed appropriately using (require 'cic-emacs-common) is
 ;; sufficient.
 ;;
 ;; Has supporting bash and Python scripts also have their own
@@ -50,19 +50,19 @@
 (require 'org-table)
 
 (add-to-list 'load-path ".")
-(add-to-list 'load-path "../emacs-stdlib/")
-(load "../emacs-stdlib/emacs-config.el")
-(requiring-package (emacs-stdlib-aliases))
-(requiring-package (emacs-stdlib-patterns))
-(requiring-package (emacs-stdlib-functions))
-(requiring-package (emacs-stdlib-keys))
+(add-to-list 'load-path "../cic-emacs-common/")
+(load "../cic-emacs-common/cic-emacs-config.el")
+(requiring-package (cic-emacs-common-aliases))
+(requiring-package (cic-emacs-patterns))
+(requiring-package (cic-emacs-functions))
+(requiring-package (cic-emacs-macros))
+(requiring-package (cic-emacs-org-mode))
+(requiring-package (cic-emacs-passwords))
+(requiring-package (cic-emacs-strings))
+(requiring-package (cic-emacs-keys))
 (requiring-package (tblel))
 ;; XXXX: uncomment to use my keys
-;; (emacs-stdlib-keys-mode t)
-;; (emacs-stdlib-keys-non-term-mode t)
-(requiring-package (emacs-stdlib-super-hyper-keys))
-;; XXXX: uncomment to use my super and hyper keys
-;; (emacs-stdlib-super-keys-mode t)
-;; (emacs-stdlib-hyper-keys-all-mode t)
+;; (cic-emacs-keys-mode t)
+;; (cic-emacs-keys-non-term-mode t)
 (requiring-package (otlb-sample-config))
 (requiring-package (otlb-gps))

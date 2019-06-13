@@ -7,7 +7,7 @@
 ;; Author: Andrew Kroshko
 ;; Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 ;; Created: Sun Apr 5, 2015
-;; Version: 20190228
+;; Version: 20190327
 ;; URL: https://github.com/akroshko/emacs-otlb
 ;;
 ;; This program is free software; you can redistribute it and/or
@@ -36,8 +36,8 @@
 ;; Features that might be required by this library:
 ;;
 ;; Standard Emacs features, to be documented specificly later.  Also
-;; requires features from https://github.com/akroshko/emacs-stdlib,
-;; when installed appropriately using (require 'emacs-stdlib) is
+;; requires features from https://github.com/akroshko/cic-emacs-common,
+;; when installed appropriately using (require 'cic-emacs-common) is
 ;; sufficient.
 ;;
 ;; Has supporting bash and Python scripts also have their own
@@ -103,7 +103,6 @@ in appropriate place."
 
 ;; only global key required!
 (global-set-key (kbd "s-j l p") 'otlb-gps-find-pedestrian-location)
-
 
 (defun otlb-gps-mode-map (map)
   "Return a standard mode map for otlb-gps."
@@ -191,6 +190,7 @@ in appropriate place."
     ;; I like this mode, but it really slows down loading some org-mode files
     (otlb-gps-mode)))
 
+;; TODO: is there a better way to enable mode
 (add-hook 'find-file-hook 'otlb-setup-hook)
 
 (defun otlb-gps-find-pedestrian-location ()
@@ -201,12 +201,14 @@ in appropriate place."
 (defun otlb-gps-cycle ()
   "Cycle headings and tables open specific to otlb-gps."
   (interactive) (otlb-gps-interactive)
-  (org-show-all) (org-cycle-hide-drawers 'all))
+  (org-show-all)
+  (org-cycle-hide-drawers 'all))
 
 (defun otlb-gps-cycle-shift ()
   "Cycle headings and tables closed specific to otlb-gps."
   (interactive) (otlb-gps-interactive)
-  (org-shifttab '(64)) (org-cycle-hide-drawers 'all))
+  (org-overview)
+  (org-cycle-hide-drawers 'all))
 
 (defun otlb-gps-footwear (&optional arg)
   "Command to handle tracking footwear mileage."
@@ -223,7 +225,7 @@ in appropriate place."
 ;; TODO: make these use multiple directories
 (defun otlb-gps-file-ids (location)
   "Walk GPS files to get all IDs, .tcx files only for now.  GPS
-files are in the format <<YYYYMMDD>>T<<HHMMSS>>, originally based
+files are in the format <<YYYYMMDD>>t<<HHMMSS>>, originally based
 off of a tool for downloading off of a Garmin 305."
   (let ((otlb-gps-path location))
     (setq otlb-gps-file-ids nil)
@@ -273,13 +275,6 @@ the primary device, generally used before an interactive command."
   (dolist (otlb-gps-location otlb-gps-locations)
     (setq otlb-gps-file-ids (nconc otlb-gps-file-ids (otlb-gps-file-ids otlb-gps-location))))
   (otlb-gps-log-ids))
-
-;; (defun otlb-gps-refresh-secondary ()
-;;   "Refresh information from the filesystem and logbook related to
-;; the secondary device, generally used before an interactive
-;; command."
-;;   (otlb-gps-file-ids (cadr otlb-gps-locations))
-;;   (otlb-gps-log-ids))
 
 (defvar otlb-gps-id-history
   nil
@@ -345,11 +340,11 @@ the primary device, generally used before an interactive command."
            (lap-paces (cdr (assoc 'pace fit-laps)))
            (lap-heart-rates (cdr (assoc 'average-heart-rate fit-laps)))
            (lap-maximum-heart-rates (cdr (assoc 'maximum-heart-rate fit-laps)))
-           (lap-tuple (zip lap-times
-                           lap-distances
-                           lap-paces
-                           lap-heart-rates
-                           lap-maximum-heart-rates))
+           (lap-tuple (cic:zip lap-times
+                               lap-distances
+                               lap-paces
+                               lap-heart-rates
+                               lap-maximum-heart-rates))
            (total-distance (cdr (assoc 'distance fit-alist)))
            (total-time (cdr (assoc 'timer-time fit-alist)))
            (total-pace (cdr (assoc 'pace fit-alist)))
@@ -364,11 +359,11 @@ the primary device, generally used before an interactive command."
            (time-zone -6.0 ;; (cadr (assoc 'time-zone read-alist))
                       )
            (header-message (concat id "\nDay: "       (otlb-gps-id-to-full-date id)
-                                      "\nDistance: "  (number-to-string total-distance) "m"
-                                      "\nTime: "      (number-to-string total-time) "s"
-                                      "\nPace: "      (number-to-string total-pace) " min/km"
-                                      "\n# of laps: " (number-to-string (length lap-times))
-                                      "\n"))
+                                   "\nDistance: "  (number-to-string total-distance) "m"
+                                   "\nTime: "      (number-to-string total-time) "s"
+                                   "\nPace: "      (number-to-string total-pace) " min/km"
+                                   "\n# of laps: " (number-to-string (length lap-times))
+                                   "\n"))
            (the-shoes (let ((shoes (otlb-gps-select-shoes header-message)))
                         (if (eq shoes 'cancel)
                             ""
@@ -485,7 +480,7 @@ well as filling in known information."
                           ""
                         shoes)))
          ;; duration in seconds
-         (the-duration (* 60 (string-to-float the-distance) (string-to-float the-pace)))
+         (the-duration (* 60 (cic:string-to-float the-distance) (cic:string-to-float the-pace)))
          (the-end-time "")
          (the-end-id "")
          (table (concat
@@ -555,7 +550,7 @@ well as filling in known information."
   ;; TODO: configure command a little better
   ;; TODO: outdated because of no options too
   (call-process "x11_save_focused_window.sh" nil nil nil)
-  (start-process "terminal" "*terminal output*" "launch.sh" "rxvt-unicode" "-e" "bash" "-i" "-c" "(fetch-garmin-310);while read -r -t 0;do read -r; done;read -n 1 -s -r -p 'Press any key to continue...'"))
+  (cic:start-process-message "terminal" "*terminal output*" "launch.sh" "rxvt-unicode" "-name" "rxvt-below" "--geometry" "+0+0" "-e" "bash" "-i" "-c" "(fetch-garmin-310);while read -r -t 0;do read -r; done;read -n 1 -s -r -p 'Press any key to continue...'"))
 
 ;; sort the entries by reverse date/time, bubble sort is nice when log
 ;; is already almost sorted
@@ -636,15 +631,15 @@ TODO: need a better description of this"
               (setq last-week-end week-end))
             (setq first-week-end week-end)
             (unless total-thing
-              (setq total-thing (list (list "") "0.0km" "0h:00")))
+              (setq total-thing '(("") "0.0km" "0h:00")))
             (unless run-thing
-              (setq run-thing (list (list "") "0.0km" "0h:00")))
+              (setq run-thing '(("") "0.0km" "0h:00")))
             (unless walk-thing
-              (setq walk-thing (list (list "") "0.0km" "0h:00")))
+              (setq walk-thing '(("") "0.0km" "0h:00")))
             ;; TODO: need way to get appropriate week
             (insert (concat week-end " | " (number-to-string (otdb-table-number (elt total-thing 1))) " | " (elt total-thing 2) " | "
-                                           (number-to-string (otdb-table-number (elt   run-thing 1))) " | " (elt   run-thing 2) " | "
-                                           (number-to-string (otdb-table-number (elt  walk-thing 1))) " | " (elt  walk-thing 2) "\n"))))
+                            (number-to-string (otdb-table-number (elt   run-thing 1))) " | " (elt   run-thing 2) " | "
+                            (number-to-string (otdb-table-number (elt  walk-thing 1))) " | " (elt  walk-thing 2) "\n"))))
         (basic-save-buffer))
       (message (concat "otlb-gps: wrote plot data to " dat-file))
       (with-current-file-transient-min script-file
@@ -652,7 +647,7 @@ TODO: need a better description of this"
         (insert "clear\n")
         (insert "reset\n")
         (insert (concat "set title 'Mileage per-week (Sunday midnight to Sunday midnight) from " (otlb-gps-id-to-date (otlb-gps-id-sunday-midnight start-id)) " back " (number-to-string previous-weeks) " weeks'\n"))
-        (insert "set timefmt \"%Y%m%dT%H%M%S\"\n")
+        (insert "set timefmt \"%Y%m%dt%H%M%S\"\n")
         ;; axes
         (insert "set xdata time\n")
         (insert (concat "set xrange " "[\"" (otlb-gps-n-week-id 1 (otlb-gps-id-to-encode-time first-week-end)) "\":\"" (otlb-gps-n-week-id -1 (otlb-gps-id-to-encode-time last-week-end)) "\"]" "reverse\n"))
@@ -671,8 +666,8 @@ TODO: need a better description of this"
         (insert "set boxwidth 0.25 relative\n")
         (insert "set grid\n")
         (insert (concat "plot '" dat-file "' using (timecolumn(1)-60*60*24*7*0.15):2 title 'total', "
-                                        " '' using (timecolumn(1)-60*60*24*7*0.45):4 title 'running', "
-                                        " '' using (timecolumn(1)-60*60*24*7*0.75):6 title 'walking'\n"))
+                        " '' using (timecolumn(1)-60*60*24*7*0.45):4 title 'running', "
+                        " '' using (timecolumn(1)-60*60*24*7*0.75):6 title 'walking'\n"))
         (basic-save-buffer)
         (gnuplot-send-buffer-to-gnuplot))
       (bury-buffer (get-buffer "*gnuplot*")))))
@@ -710,21 +705,21 @@ TODO: create buffer for looking at raw data?
               (setq last-week-end week-end))
             (setq first-week-end week-end)
             (unless total-thing
-              (setq total-thing (list (list "") "0.0km" "0h:00")))
+              (setq total-thing '(("") "0.0km" "0h:00")))
             (unless run-thing
-              (setq run-thing (list (list "") "0.0km" "0h:00")))
+              (setq run-thing '(("") "0.0km" "0h:00")))
             (unless walk-thing
-              (setq walk-thing (list (list "") "0.0km" "0h:00")))
+              (setq walk-thing '(("") "0.0km" "0h:00")))
             (insert (concat week-end " | " (number-to-string (otdb-table-number (elt total-thing 1))) " | " (elt total-thing 2) " | "
-                                           (number-to-string (otdb-table-number (elt   run-thing 1))) " | " (elt   run-thing 2) " | "
-                                           (number-to-string (otdb-table-number (elt  walk-thing 1))) " | " (elt  walk-thing 2) "\n"))))
+                            (number-to-string (otdb-table-number (elt   run-thing 1))) " | " (elt   run-thing 2) " | "
+                            (number-to-string (otdb-table-number (elt  walk-thing 1))) " | " (elt  walk-thing 2) "\n"))))
         (basic-save-buffer))
       (with-current-file-transient-min script-file
         (erase-buffer)
         (insert "clear\n")
         (insert "reset\n")
         (insert (concat "set title 'Running sum of mileage for previous " (number-to-string n-weekly) " week from each day starting at " start-id ", back " (number-to-string previous-weeks) " weeks'\n"))
-        (insert "set timefmt \"%Y%m%dT%H%M%S\"\n")
+        (insert "set timefmt \"%Y%m%dt%H%M%S\"\n")
         (insert "set xrange [*:*] reverse\n")
         (insert "set xdata time\n")
         (insert (concat "set xrange " "[\"" (otlb-gps-n-day-id 1 (otlb-gps-id-to-encode-time first-week-end)) "\":\"" (otlb-gps-n-day-id -1 (otlb-gps-id-to-encode-time last-week-end)) "\"]" "reverse\n"))
@@ -743,25 +738,11 @@ TODO: create buffer for looking at raw data?
         (insert "set boxwidth 0.25 relative\n")
         (insert "set grid\n")
         (insert (concat "plot '" dat-file "' using (timecolumn(1)-60*60*24*0.15):2 title 'total', "
-                                        " '' using (timecolumn(1)-60*60*24*0.45):4 title 'running', "
-                                        " '' using (timecolumn(1)-60*60*24*0.75):6 title 'walking'\n"))
+                        " '' using (timecolumn(1)-60*60*24*0.45):4 title 'running', "
+                        " '' using (timecolumn(1)-60*60*24*0.75):6 title 'walking'\n"))
         (basic-save-buffer)
         (gnuplot-send-buffer-to-gnuplot))
       (bury-buffer (get-buffer "*gnuplot*")))))
-
-(defun otlb-gps-elp-instrument ()
-  "Standard profiling setup that really helps find bottlenecks"
-  (interactive)
-  (require 'elp)
-  (elp-restore-all)
-  (elp-reset-all)
-  (elp-instrument-package "otlb")
-  (elp-instrument-package "cic:")
-  (elp-instrument-package "org-table")
-  (elp-instrument-package "org")
-  ;; some commonly used functions
-  (elp-instrument-function 'format)
-  (elp-reset-all))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; functions
@@ -807,7 +788,7 @@ footwear."
 
 (defun otlb-gps-insert-miscellaneous-ask ()
   (interactive)
-  (let ((selected (cic:select-list-item (list "strength" "stretch" "strength/stretch"))))
+  (let ((selected (cic:select-list-item '("strength" "stretch" "strength/stretch"))))
     (cond ((equal selected "strength")
            (if (boundp 'otlb-gps-strength-template)
                (otlb-gps-insert-miscellaneous nil "strength:" otlb-gps-strength-template)
@@ -917,6 +898,7 @@ TAG-STRING tags after :miscellaneous: tag."
         (id-day (substring id 6 8)))
     (concat id-year "-" id-month "-" id-day)))
 
+;; TODO: not used but keep
 (defun otlb-gps-id-to-time (id)
   "Convert a GPS ID into a colon-seperated time representation."
   (let ((id-hour (substring id 9 11))
@@ -945,8 +927,8 @@ TAG-STRING tags after :miscellaneous: tag."
 (defun otlb-gps-pace-to-string (pace &optional abbreviate)
   "Get a nice representation of a running PACE in minutes per
 kilometer."
-  (if (or (equal pace (string-to-float "1.0e+INF"))
-          (equal pace (string-to-float "1.0e-INF"))
+  (if (or (equal pace (cic:string-to-float "1.0e+INF"))
+          (equal pace (cic:string-to-float "1.0e-INF"))
           (isnan pace))
       ""
     (let* ((minutes (floor pace))
@@ -961,39 +943,34 @@ kilometer."
 (defun otlb-gps-string-to-duration (str)
   "Convert the standard time string STR into a duration in
 seconds."
-  (let* ((str-strip-full (s-trim-full str))
+  (let* ((str-trim-full (s-trim-full str))
          str-split
          hours
          minute-split
          minutes
          seconds)
-    (setq str-split (split-string str-strip-full "h"))
+    (setq str-split (split-string str-trim-full "h"))
     (if (> (length str-split) 1)
-        (progn
-          (setq hours (string-to-float (car str-split)))
-          (setq str-strip-full (cadr str-split)))
-      (progn
-        (setq hours 0)
-        (setq str-strip-full (car str-split))))
-    (setq str-split (split-string str-strip-full ":")) ;
-    (setq minutes (string-to-float (car str-split)))
-    (setq seconds (string-to-float (cadr str-split)))
+        (setq hours         (cic:string-to-float (car str-split))
+              str-trim-full (cadr str-split))
+      (setq hours         0
+            str-trim-full (car str-split)))
+    (setq str-split (split-string str-trim-full ":")
+          minutes (cic:string-to-float (car str-split))
+          seconds (cic:string-to-float (cadr str-split)))
     (+ (* hours 3600) (* minutes 60) seconds)))
 
 (defun otlb-gps-string-to-distance (str)
   "Convert the standard distance string STR into distance in
 meters."
-  (* (string-to-float str) 1000.0))
+  (* (cic:string-to-float str) 1000.0))
 
 (defun otlb-gps-string-to-pace (str)
   "Convert the standard pace string STR into mins/km in decimal."
-  (let* ((str-strip-full (s-trim-full str))
-         str-split
-         minutes
-         seconds)
-    (setq str-split (split-string str-strip-full ":"))
-    (setq minutes (string-to-float (car str-split)))
-    (setq seconds (string-to-float (cadr str-split)))
+  (let* ((str-trim-full (s-trim-full str))
+         (str-split     (split-string str-trim-full ":"))
+         (minutes       (cic:string-to-float (car str-split)))
+         (seconds       (cic:string-to-float (cadr str-split))))
     (+ minutes (/ seconds 60.0))))
 
 (defun otlb-gps-string-sum-durations (durations)
@@ -1004,6 +981,7 @@ meters."
   "Sum DISTANCES and convert into a string."
   (otlb-gps-distance-to-string (apply '+ (mapcar 'otlb-gps-string-to-distance distances))))
 
+;; TODO: not used but keep here
 (defun otlb-gps-string-average-paces (paces)
   "Average PACES and convert into a string."
   (otlb-gps-pace-to-string (/ (apply '+ (mapcar 'otlb-gps-string-to-pace paces)) (length paces))))
@@ -1021,26 +999,24 @@ meters."
     (save-excursion
       (org-back-to-heading)
       ;; go back to headline
-      (let* ((otlb-gps-taglist (list "backpacking"
-                                     "running"
-                                     "walking"
-                                     "invalid"))
+      (let* ((otlb-gps-taglist '("backpacking"
+                                 "running"
+                                 "walking"
+                                 "invalid"))
              (current-tags (org-get-tags))
-             (current-tag (car-only (cl-intersection otlb-gps-taglist current-tags :test 'equal)))
+             (current-tag (cic:car-only (cl-intersection otlb-gps-taglist current-tags :test 'equal)))
              (count 0)
              current-index
              next-index
              new-tags)
         ;; get current index and the next index
-        (mapcar
-         (lambda (e)
-           (when (string= e current-tag)
-             (setq current-index count))
-           (setq count (1+ count)))
-         otlb-gps-taglist)
-        (setq next-index (mod (1+ current-index) (length otlb-gps-taglist)))
-        ;; replace instances of current-tag with one at next-index
-        (setq new-tags (cl-subst (elt otlb-gps-taglist next-index) current-tag current-tags :test 'equal))
+        (dolist (e otlb-gps-taglist)
+          (when (string= e current-tag)
+            (setq current-index count))
+          (setq count (1+ count)))
+        (setq next-index (mod (1+ current-index) (length otlb-gps-taglist))
+              ;; replace instances of current-tag with one at next-index
+              new-tags   (cl-subst (elt otlb-gps-taglist next-index) current-tag current-tags :test 'equal))
         ;; delete tags and replace them
         (when (re-search-forward ":[[:alnum:]:]*:$" nil t)
           (replace-match (concat ":" (mapconcat 'identity new-tags ":") ":")))))
@@ -1052,11 +1028,10 @@ entry."
   (interactive)
   (save-excursion
     (org-back-to-heading)
-    (let* ((otlb-gps-taglist (list
-                              '()
-                              '("incomplete")
-                              '("manual" "complete")
-                              '("manual" "incomplete")))
+    (let* ((otlb-gps-taglist '(()
+                               ("incomplete")
+                               ("manual" "complete")
+                               ("manual" "incomplete")))
            (current-tags (org-get-tags))
            (count (length otlb-gps-taglist))
            found-index
@@ -1070,14 +1045,14 @@ entry."
           (setq count (- count 1))
           (when (= (length (cl-intersection tag-groups current-tags :test 'equal))
                    (length tag-groups))
-            (setq found-index count)
-            (setq already-found t))))
+            (setq found-index   count
+                  already-found t))))
       ;; must delete elements individually for now
       (mapcar (lambda (e)
                 (setq current-tags (delete e current-tags)))
               (elt otlb-gps-taglist found-index))
-      (setq next-index (mod (1+ found-index) (length otlb-gps-taglist)))
-      (setq new-taglist (append current-tags (elt otlb-gps-taglist next-index)))
+      (setq next-index  (mod (1+ found-index) (length otlb-gps-taglist))
+            new-taglist (append current-tags (elt otlb-gps-taglist next-index)))
       (when (re-search-forward ":[[:alnum:]:]*:$"  nil t)
         (replace-match (concat ":" (mapconcat 'identity new-taglist ":") ":"))))))
 
@@ -1125,8 +1100,7 @@ START-ID."
 (defun otlb-gps-total-totals (totals)
   "Helper function to add up the total mileage."
   ;; TODO: change to reflect tags
-  (reduce 'otlb-gps-sum-totals totals :initial-value (list
-                                                      (list 'total (list nil "0.000km" "0:00")))))
+  (reduce 'otlb-gps-sum-totals totals :initial-value ((total (nil "0.000km" "0:00")))))
 
 (defun otlb-gps-sum-totals (total1 total2)
   "Sum distance and duration totals from TOTAL1 and TOTAL2."
@@ -1143,35 +1117,31 @@ START-ID."
                      (assq key total1)
                      (not (assq key total2)))
                     ;; if key is only in lst1
-                    (setq total-list (cons
-                                      (assoc key total1)
-                                      total-list)))
+                    (push (assoc key total1) total-list))
                    ((and
                      (not (assq key total1))
                      (assq key total2))
                     ;; if key is only in lst2
-                    (setq total-list (cons
-                                      (assoc key total2)
-                                      total-list)))
+                    (push (assoc key total2) total-list))
                    (t
                     (let* ((lst1 (cadr (assq key total1)))
                            (lst2 (cadr (assq key total2))))
-                      (setq total-list (cons (list key
-                                                   (list
-                                                    (append (nth 0 lst2) (nth 0 lst1))
-                                                    (otlb-gps-string-sum-distances (list (nth 1 lst2) (nth 1 lst1)))
-                                                    (otlb-gps-string-sum-durations (list (nth 2 lst2) (nth 2 lst1)))))
-                                             total-list))))))
+                      (push (list key
+                                  (list
+                                   (append (nth 0 lst2) (nth 0 lst1))
+                                   (otlb-gps-string-sum-distances (list (nth 1 lst2) (nth 1 lst1)))
+                                   (otlb-gps-string-sum-durations (list (nth 2 lst2) (nth 2 lst1)))))
+                            total-list)))))
            (nreverse total-list)))))
 
 (defun otlb-gps-totals (start-id end-id)
   "Get totals between START-ID and END-ID."
   (let (gathered)
     ;; how to accumulate data from table, use global?
-    (setq otlb-gps-gathered nil)
-    ;; copy table and delete old enteries than end
-    ;; XXXX there may be issues with lists that are repeatedly reversed
-    (setq gathered nil)
+    (setq otlb-gps-gathered nil
+          ;; copy table and delete old enteries than end
+          ;; XXXX there may be issues with lists that are repeatedly reversed
+          gathered          nil)
     (do-otlb-gps-entries start-id end-id gathered
                          (otlb-gps-entry-get))
     gathered))
@@ -1184,19 +1154,20 @@ START-ID."
         time
         distance)
     (otlb-gps-table-last-row)
-    (setq time (s-trim-full-no-properties (org-table-get nil 1)))
-    (setq distance (s-trim-full-no-properties (org-table-get nil 2)))
+    (setq time     (s-trim-full-no-properties (org-table-get nil 1))
+          distance (s-trim-full-no-properties (org-table-get nil 2)))
     (if (or (eq tag 'running) (eq tag 'walking))
         (list (list 'total (list (list id) distance time))
               (list tag (list (list id) distance time)))
       (list (list tag (list (list id) distance time))))))
 
+;; TODO: not used I don't think
 (defun otlb-gps-id-capture ()
   "Read in a GPS ID based on an entered date and time."
   (interactive)
   (let* ((capture-date (org-read-date))
          (capture-time (read-string "Enter 24 hour time HHMM: "))
-         (id (concat (replace-regexp-in-string "-" "" capture-date) "T" capture-time "00")))
+         (id (concat (replace-regexp-in-string "-" "" capture-date) "t" capture-time "00")))
     (setq otlb-gps-store-id id)
     (otlb-gps-id-to-full-date id)))
 
@@ -1264,10 +1235,10 @@ start time."
                                  (+ (cadr current-sum)
                                     (string-to-number (cadr id)))
                                  nil))
-          (setq sums (cons (list
-                            (car id)
-                            (string-to-number (cadr id)))
-                           sums)))))
+          (push (list
+                 (car id)
+                 (string-to-number (cadr id)))
+                sums))))
     (nreverse sums)))
 
 (defun otlb-gps-insert-shoe-totals ()
@@ -1293,7 +1264,7 @@ start time."
          (output-file (and (file-exists-p (concat (car otlb-gps-locations) "/" id ".png")) (concat (car otlb-gps-locations) "/" id ".png"))))
     ;; open image with feh
     (call-process "x11_save_focused_window.sh" nil nil nil)
-    (start-process "feh otlb" "*feh output*" "launch.sh" "feh-open-browse" output-file)))
+    (cic:start-process-message "feh otlb" "*feh output*" "launch.sh" "feh-open-browse" output-file)))
 
 ;; TODO: all gps locations automatically
 (defun otlb-gps-open-google-earth ()
@@ -1309,7 +1280,7 @@ start time."
     ;; run script to convert to gpx and open in Google Earth
     ;; TODO: change to google-chrome https://earth.google.com/web
     (call-process "x11_save_focused_window.sh" nil nil nil)
-    (start-process "google earth" "*google earth output*" "launch.sh" otlb-gps-map-command output-file)))
+    (cic:start-process-message "google earth" "*google earth output*" "launch.sh" otlb-gps-map-command output-file)))
 
 (defun otlb-gps-map-preview ()
   "Preview the current logbook entry in an emacs buffer."
@@ -1339,7 +1310,7 @@ start time."
   (let* ((id (otlb-gps-get-id))
          (the-location (otlb-gps-find-id-location id)))
     (call-process "x11_save_focused_window.sh" nil nil nil)
-    (start-process "feh map" "*otlb feh maps output*" "feh" (concat the-location "/" id "-1280.png"))))
+    (cic:start-process-message "feh map" "*otlb feh maps output*" "feh" (concat the-location "/" id "-1280.png"))))
 
 (defun otlb-gps-graph-distance ()
   "Build a speed/elevation graph with respect to distance."
@@ -1352,7 +1323,7 @@ start time."
     ;; run script to graph it
     ;; TODO: want to record output here too
     (call-process "x11_save_focused_window.sh" nil nil nil)
-    (start-process "graph" "*graph output*" "launch.sh" "python" otlb-gps-graph-fit-command output-file "--graph-fit-distance")))
+    (cic:start-process-message "graph" "*graph output*" "launch.sh" "python" otlb-gps-graph-fit-command output-file "--graph-fit-distance")))
 
 (defun otlb-gps-graph-time ()
   "Build a speed/elevation graph with respect to elapsed time."
@@ -1365,7 +1336,7 @@ start time."
     ;; run script to graph it
     ;; TODO: want to record output here too
     (call-process "x11_save_focused_window.sh" nil nil nil)
-    (start-process "graph" "*graph output*" "launch.sh" "python" otlb-gps-graph-fit-command output-file "--graph-fit-time")))
+    (cic:start-process-message "graph" "*graph output*" "launch.sh" "python" otlb-gps-graph-fit-command output-file "--graph-fit-time")))
 
 (defun otlb-gps-calc ( lisp-table lisp-table-no-seperators)
   "Calculated an updated lisp table from the LISP-TABLE-NO-SEPERATORS
@@ -1375,9 +1346,9 @@ corresponding to an otlb-gps log entry."
         pace-column
         (new-lisp-table (list (car lisp-table-no-seperators))))
     (dolist (lisp-row (butlast (cdr lisp-table-no-seperators)))
-      (setq duration (+ duration (otlb-gps-string-to-duration (elt lisp-row 0))))
-      (setq distance (+ distance (otlb-gps-string-to-distance (elt lisp-row 1))))
-      (setq pace-column (nconc pace-column (list (otlb-gps-string-pace (elt lisp-row 0) (elt lisp-row 1))))))
+      (setq duration    (+ duration (otlb-gps-string-to-duration (elt lisp-row 0)))
+            distance    (+ distance (otlb-gps-string-to-distance (elt lisp-row 1)))
+            pace-column (nconc pace-column (list (otlb-gps-string-pace (elt lisp-row 0) (elt lisp-row 1))))))
     (dolist (current-lisp-row (cdr (butlast lisp-table-no-seperators)))
       (setq new-lisp-table
             (nconc
@@ -1441,6 +1412,7 @@ sorted."
   "Encode DAYS days into encoded time."
   (seconds-to-time (* 86400 days)))
 
+;; TODO: not used, probably not that useful
 (defun otlb-gps-id-to-date-components (id)
   "Get the date components from a GPS ID"
   (let ((id-year (substring id 0 4))
@@ -1466,6 +1438,7 @@ sorted."
                  (string-to-number id-month)
                  (string-to-number id-year))))
 
+;; TODO: not used, will probably be used one time gets out of one time zone
 (defun otlb-gps-zulu-to-encode-time (zulu)
   "Encode zulu time ZULU into encoded time."
   (let ((zulu-year (substring zulu 0 4))
@@ -1544,6 +1517,7 @@ sorted."
   (re-search-forward "^* .*:.*:.*:.*:")
   (beginning-of-line))
 
+;; TODO: not used I don't think
 (defun otlb-gps-id-capture-insert ()
   "Insert a stored GPS ID at point."
   (interactive)
@@ -1601,6 +1575,7 @@ programaticly."
   (search-forward ":END:" nil t)
   (forward-line 1))
 
+;; TODO: is there a better way to do this?
 (defun otlb-gps-table-last-row ()
   ;; XXXX: this cookie is always present in an otlb table
   (search-forward "#+TBL")
@@ -1625,14 +1600,14 @@ programaticly."
   "Get the GPS ids going WEEKS-BACK weeks from START-ID."
   (let (ids)
     (dotimes (week (1+ weeks-back))
-      (setq ids (cons (otlb-gps-n-week-id week (otlb-gps-id-to-encode-time start-id)) ids)))
+      (push (otlb-gps-n-week-id week (otlb-gps-id-to-encode-time start-id)) ids))
     (nreverse ids)))
 
 (defun otlb-gps-id-range-daily (&optional start-id days-back)
   "Get the GPS ids going back DAYS-BACK from START-ID."
   (let (ids)
     (dotimes (day (1+ days-back))
-      (setq ids (cons (otlb-gps-n-day-id day (otlb-gps-id-to-encode-time start-id)) ids)))
+      (push (otlb-gps-n-day-id day (otlb-gps-id-to-encode-time start-id)) ids))
     (nreverse ids)))
 
 (defun otlb-gps-n-day-id (&optional n-day date)
@@ -1655,6 +1630,7 @@ specified N-WEEK is 1 and DATE is the current encoded time."
   (let ((week-subtract (otlb-gps-weeks-to-encode-time n-week)))
     (otlb-gps-encoded-time-to-id (time-subtract date week-subtract))))
 
+;; TODO: not used, but keep here
 (defun otlb-gps-n-month-id (&optional n-month date)
 "Get the GPS id that is N-MONTH months back from DATE. If not
 specified N-MONTH is 1 and DATE is the current encoded time."
@@ -1671,6 +1647,7 @@ specified N-MONTH is 1 and DATE is the current encoded time."
     (aset the-time 5 new-year)
     (otlb-gps-encoded-time-to-id (apply 'encode-time (mapcar 'identity the-time)))))
 
+;; TODO: not used, but keep here
 (defun otlb-gps-n-year-id (&optional n-year date)
   "Get the GPS id that is N-YEAR years back from DATE. If not
 specified N-YEAR is 1 and DATE is the current encoded time."
@@ -1834,9 +1811,9 @@ END-ID."
       (unless (= row-count 0)
         ;; TODO: figure out a good multiplier based on energy cost
         (let* ((equiv-flat-distance-multiple 4.0)
-               (hill-length         (string-to-float (elt row 1)))
-               (start-elevation     (string-to-float (elt row 2)))
-               (end-elevation       (string-to-float (elt row 3)))
+               (hill-length         (cic:string-to-float (elt row 1)))
+               (start-elevation     (cic:string-to-float (elt row 2)))
+               (end-elevation       (cic:string-to-float (elt row 3)))
                (total-elevation     (- end-elevation start-elevation))
                (grade               (* 100.0 (/ total-elevation hill-length)))
                (equiv-flat-distance (+ hill-length (* equiv-flat-distance-multiple total-elevation)))

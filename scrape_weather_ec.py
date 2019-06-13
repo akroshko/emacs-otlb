@@ -7,7 +7,7 @@
 # Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 # Created: Sat Mar 28, 2015
 # Version: 20190228
-# URL: https://github.com/akroshko/python-stdlib-personal
+# URL: https://github.com/akroshko/cic-python-common
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
