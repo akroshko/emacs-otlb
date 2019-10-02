@@ -52,7 +52,7 @@ export OSMCARTODIRECTORY="$HOME/cic-var/openstreetmap-data/openstreetmap-carto"
 # TODO: this needs to be a more general function
 get-otlb-source () {
     # https://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in
-    SOURCE="${BASH_SOURCE[0]}"
+    SOURCE="$BASH_SOURCE"
     while [[ -h "$SOURCE" ]]; do # resolve $SOURCE until the file is no longer a symlink
         DIRNAMESOURCE=$(dirname -- "$SOURCE")
         # TODO: is this redundant
@@ -267,7 +267,7 @@ get-id-tcx () {
     fi
     local XMLID=${XMLID//-/}
     local XMLID=${XMLID//:/}
-    echo $(python "$OTLBSOURCE"/read_files.py "$XMLID" --utc)
+    python "$OTLBSOURCE/read_files.py" "$XMLID" --utc
     # rename for import
     # TODO: convert time zone properly, just add 6 hours for now
 }
@@ -280,7 +280,7 @@ get-id-gpx () {
     local XMLID=$(xmlstarlet sel -t -v "//*[local-name() = 'metadata']/*[local-name() = 'time']" -n "$1")
     local XMLID=${XMLID//-/}
     local XMLID=${XMLID//:/}
-    echo $(python "$OTLBSOURCE"/read_files.py "$XMLID" --utc)
+    python "$OTLBSOURCE/read_files.py" "$XMLID" --utc
     # rename for import
 }
 

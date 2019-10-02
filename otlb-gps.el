@@ -117,8 +117,8 @@ in appropriate place."
   (define-key map (kbd "s-l L")   'otlb-gps-cycle-shift)
   (define-key map (kbd "s-l s-L") 'otlb-gps-cycle-shift)
   ;; TODO: make sure this increments workouts
-  (define-key map (kbd "H-j")     'otlb-gps-map-preview)
-  (define-key map (kbd "H-z")     'otlb-gps-map-preview)
+  ;; (define-key map (kbd "H-j")     'otlb-gps-map-preview)
+  ;; (define-key map (kbd "H-z")     'otlb-gps-map-preview)
   (define-key map (kbd "s-o o")   'otlb-gps-map-open)
   (define-key map (kbd "s-o s-o") 'otlb-gps-map-open)
   (define-key map (kbd "s-l m")   'otlb-gps-open-cached-osm)
@@ -430,7 +430,7 @@ the primary device, generally used before an interactive command."
       (insert (concat "  :RAW:\n"
                       table
                       "  :END:\n"))
-      (search-backward ":RAW:")
+      (search-backward ":RAW:" nil t)
       (org-cycle)
       ;; move to next line without ???
       (next-line)
@@ -438,8 +438,8 @@ the primary device, generally used before an interactive command."
       ;; put the table
       (insert table)
       (org-back-to-heading)
-      (search-forward ":END:")
-      (search-forward ":END:")
+      (search-forward ":END:" nil t)
+      (search-forward ":END:" nil t)
       (forward-line 1)
       ;; TODO replace with nicer functions used elsewhere
       (cic:org-table-last-row)
@@ -453,7 +453,7 @@ the primary device, generally used before an interactive command."
   (otlb-gps-sort)
   (flush-lines "^\\s-*$")
   ;; TODO: better function for finding newly inserted id
-  (search-forward (concat ":id: " id))
+  (search-forward (concat ":id: " id) nil t)
   (org-back-to-heading))
 
 (defun otlb-gps-insert-unrecorded (&optional id)
@@ -1250,7 +1250,7 @@ start time."
       (dolist (shoe shoe-totals)
         ;; find the unique shoe ID
         (goto-char (point-min))
-        (search-forward (car shoe))
+        (search-forward (car shoe) nil t)
         (org-table-put nil 11 (concat (format "%.2f km" (cadr shoe))))
         (org-table-align)))))
 
@@ -1514,7 +1514,7 @@ sorted."
   org-forward-heading-same-level."
   ;; TODO: use known tags but without any complications that could kill performance
   (end-of-line)
-  (re-search-forward "^* .*:.*:.*:.*:")
+  (re-search-forward "^* .*:.*:.*:.*:" nil t)
   (beginning-of-line))
 
 ;; TODO: not used I don't think
@@ -1578,7 +1578,7 @@ programaticly."
 ;; TODO: is there a better way to do this?
 (defun otlb-gps-table-last-row ()
   ;; XXXX: this cookie is always present in an otlb table
-  (search-forward "#+TBL")
+  (search-forward "#+TBL" nil t)
   (forward-line -2)
   (forward-char 3))
 
@@ -1715,7 +1715,7 @@ END-ID."
         (format "%dh%02d:%04.1f" hours (- minutes (* hours 60)) (- seconds (* minutes 60) ))
       (format "%d:%04.1f" minutes (- seconds (* minutes 60) )))))
 
-(defun tblel-pace-table (lisp-table lisp-table-no-seperators)
+(defun tblel-pace-table (lisp-table lisp-table-no-seperators &rest tblel-args)
   (let* ((second-row (elt lisp-table-no-seperators 1))
          ;; get times and calculate goal pace based on ???
          ;; TODO: deal with missing
@@ -1805,7 +1805,7 @@ END-ID."
         (setcar (nthcdr 14 row) (concat (otlb-gps-pace-to-string (* current-goal-pace-multiplier easy-run-pace) t) " (" (format "%.4f" easy-run-multiplier) "x5k)"))))
     lisp-table-no-seperators))
 
-(defun tblel-hill-table (lisp-table)
+(defun tblel-hill-table (lisp-table lisp-table-no-seperators &rest tblel-args)
   (let ((row-count 0))
     (dolist (row lisp-table)
       (unless (= row-count 0)
