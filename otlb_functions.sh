@@ -11,7 +11,7 @@
 # Author: Andrew Kroshko
 # Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 # Created: Fri Mar 27, 2015
-# Version: 20190329
+# Version: 20191209
 # URL: https://github.com/akroshko/emacs-otlb
 #
 # This program is free software: you can redistribute it and/or modify
@@ -139,7 +139,7 @@ fetch-garmin-310 () {
         h2
         # XXXX this seems to be necessary about once a day, but hangs if I do it every time
         if [[ $@ == *"--reset"* ]]; then
-            [[ -e "$ANTCONFIG"/authfile ]] && rm "$ANTCONFIG"/authfile
+            [[ -e "$ANTCONFIG/authfile" ]] && \rm "$ANTCONFIG/authfile"
             return 0
         fi
         if [[ $@ == *"--download"* ]]; then
@@ -156,7 +156,7 @@ fetch-garmin-310 () {
             pushd . >/dev/null
             cd "$OTLBLOGS"
             h2
-            echo "Scanning .fit directory..."
+            echo "Scanning .fit directory..." 1>&2
             time {
                 # TODO: get the cached files
                 local THECACHEDFITS=$(<"$GARMIN310CACHE")
@@ -175,22 +175,22 @@ fetch-garmin-310 () {
             }
             local THEMISSINGFITS=""
             h2
-            echo "Finding the full ids to process..."
+            echo "Finding the full ids to process..." 1>&2
             time {
                 for THEFITFILE in $FITDIRECTORY/*.fit;do
                     THEFITFILENORMALIZED=$(readlink -f -- $THEFITFILE)
                     if [[ ! "$THECACHEDFILES" =~ $THEFITFILENORMALIZED ]]; then
                         # read file....
-                        echo "Read: $THEFITFILE"
+                        echo "Read: $THEFITFILE" 1>&2
                         local THEMISSINGID=$(python "$OTLBSOURCE"/read_files.py --fit-id "$THEFITFILE")
                         # echo "$THENEWID"
                         THEMISSINGFITS="$THEMISSINGFITS"$'\n'"$THEMISSINGID"
                     fi
                 done
-                echo "Found full ids to process! The new .fit files still aren't ready yet!"
+                echo "Found full ids to process! The new .fit files still aren't ready yet!" 1>&2
             }
             h2
-            echo "Copying the fit files..."
+            echo "Copying the fit files..." 1>&2
             time {
                 # TODO: can only use subshell here because I am not
                 (IFS=$'\n'
@@ -198,30 +198,30 @@ fetch-garmin-310 () {
                      local THEORIGINALFIT=$(cut -d' ' -f1 <<< "$THEMISSINGFIT")
                      local THEID=$(cut -d' ' -f2 <<< "$THEMISSINGFIT")
                      if [[ ! -e "$TCXDIRECTORY/$THEID.tcx" && ! -e "$TCXDIRECTORY/$THEID.fit" && ! -e "$TCXDIRECTORYOLDER/$THEID.tcx" && ! -e "$TCXDIRECTORYOLDER/$THEID.fit" ]]; then
-                         echo "Missing $THEID! Copying!"
+                         echo "Missing $THEID! Copying!" 1>&2
                          if [[ ! -e "$THEORIGINALFIT" ]]; then
-                             echo "Cannot copy $THEORIGINALFIT! Not found!"
+                             echo "Cannot copy $THEORIGINALFIT! Not found!" 1>&2
                          else
                              if [[ -z $DRYRUN ]]; then
                                  cp "$THEORIGINALFIT" "$TCXDIRECTORY/$THEID.fit"
                              else
-                                 echo "Dry run: cp $THEORIGINALFIT $TCXDIRECTORY/$THEID.fit"
+                                 echo "Dry run: cp $THEORIGINALFIT $TCXDIRECTORY/$THEID.fit" 1>&2
                              fi
                          fi
                      fi
                  done)
-                echo "The new .fit files are finally processed and ready!"
+                echo "The new .fit files are finally processed and ready!" 1>&2
             }
             h2
-            echo "Updating cache!"
+            echo "Updating cache!" 1>&2
             cache-garmin-310-add
             h2
             if [[ -z $DRYRUN ]]; then
-                echo "Creating osm maps"
+                echo "Creating osm maps" 1>&2
                 cd "$TCXDIRECTORY"
                 create-osm-maps
             else
-                echo "Dry run! Not creating maps!"
+                echo "Dry run! Not creating maps!" 1>&2
             fi
             popd >/dev/null
         fi
@@ -290,13 +290,13 @@ create-osm-maps () {
         # yes, avoid existing ones
         [[ "$f" =~ -1280.png ]] && continue
         if [[ ! -e ${f%%.*}.png ]]; then
-            echo "Creating map for $f"
+            echo "Creating map for $f" 1>&2
             create-osm-map "$f"
         fi
         # create a smaller image for previewing
         # TODO: have way to redo this
         if [[ ! -e ${f%%.*}-1280.png ]]; then
-            echo "Creating x1280 map for $f"
+            echo "Creating x1280 map for $f" 1>&2
             convert -geometry 1280x\> ${f%%.*}.png ${f%%.*}-1280.png
         fi
     done
@@ -319,7 +319,7 @@ create-osm-map () {
         return 1
     fi
     # TODO: safety
-    [[ -e "$ROUTEFILE" ]] && rm "$ROUTEFILE"
+    [[ -e "$ROUTEFILE" ]] && \rm "$ROUTEFILE"
     # convert to gpx if not already gpx, otherwise just copy to tmp directory
     # TODO: handle /temp files better
     if [[ ${1##*.} == "fit" ]]; then

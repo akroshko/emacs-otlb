@@ -7,7 +7,7 @@
 ;; Author: Andrew Kroshko
 ;; Maintainer: Andrew Kroshko <akroshko.public+devel@gmail.com>
 ;; Created: Sun Apr 5, 2015
-;; Version: 20190327
+;; Version: 20191209
 ;; URL: https://github.com/akroshko/emacs-otlb
 ;;
 ;; This program is free software; you can redistribute it and/or
@@ -109,10 +109,10 @@ in appropriate place."
   (define-key map (kbd "s-l *")   'otlb-gps-recalculate-all)
   (define-key map (kbd "s-l c")   'otlb-gps-insert-conditions)
   (define-key map (kbd "s-l f")   'otlb-gps-fetch)
-  (define-key map (kbd "s-l M-g") 'otlb-gps-graph-distance)
+  (define-key map (kbd "s-l G")   'otlb-gps-graph-distance)
   (define-key map (kbd "s-l g")   'otlb-gps-graph-time)
   (define-key map (kbd "s-l i")   'otlb-gps-insert)
-  (define-key map (kbd "s-l M-i") 'otlb-gps-insert-auxiliary)
+  (define-key map (kbd "s-l I")   'otlb-gps-insert-auxiliary)
   ;; TODO: do I really want this capitalization?
   (define-key map (kbd "s-l L")   'otlb-gps-cycle-shift)
   (define-key map (kbd "s-l s-L") 'otlb-gps-cycle-shift)
@@ -122,7 +122,7 @@ in appropriate place."
   (define-key map (kbd "s-o o")   'otlb-gps-map-open)
   (define-key map (kbd "s-o s-o") 'otlb-gps-map-open)
   (define-key map (kbd "s-l m")   'otlb-gps-open-cached-osm)
-  (define-key map (kbd "s-l M-m") 'otlb-gps-open-google-earth)
+  (define-key map (kbd "s-l M")   'otlb-gps-open-google-earth)
   (define-key map (kbd "s-l n")   'otlb-gps-insert-note)
   ;; TODO: o=other, change names
   (define-key map (kbd "s-l o")   'otlb-gps-insert-miscellaneous)
@@ -550,7 +550,7 @@ well as filling in known information."
   ;; TODO: configure command a little better
   ;; TODO: outdated because of no options too
   (call-process "x11_save_focused_window.sh" nil nil nil)
-  (cic:start-process-message "terminal" "*terminal output*" "launch.sh" "rxvt-unicode" "-name" "rxvt-below" "--geometry" "+0+0" "-e" "bash" "-i" "-c" "(fetch-garmin-310);while read -r -t 0;do read -r; done;read -n 1 -s -r -p 'Press any key to continue...'"))
+  (cic:start-process-message-rxvt-below "terminal" "*terminal output*" nil "(fetch-garmin-310);while read -r -t 0;do read -r; done;read -n 1 -s -r -p 'Press any key to continue...'"))
 
 ;; sort the entries by reverse date/time, bubble sort is nice when log
 ;; is already almost sorted
